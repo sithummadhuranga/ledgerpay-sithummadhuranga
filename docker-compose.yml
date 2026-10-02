@@ -17,5 +17,21 @@ services:
       retries: 12
       start_period: 60s
 
+  # Runs once after the db is healthy, then exits.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SQLCMDPASSWORD: ${MSSQL_SA_PASSWORD}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:?set DB_MIGRATOR_PASSWORD in .env}
+      DB_API_PASSWORD: ${DB_API_PASSWORD:?set DB_API_PASSWORD in .env}
+    volumes:
+      - ./db/init:/init:ro
+    command: ["/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "db", "-U", "sa", "-b", "-i", "/init/01-create-logins.sql"]
+    restart: "no"
+
 volumes:
   sqldata:
