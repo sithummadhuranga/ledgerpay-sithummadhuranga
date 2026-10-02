@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LedgerPay.Application\LedgerPay.Application.csproj" />
+    <ProjectReference Include="..\LedgerPay.Domain\LedgerPay.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
