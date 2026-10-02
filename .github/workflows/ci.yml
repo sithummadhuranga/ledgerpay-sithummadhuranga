@@ -22,3 +22,11 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
+      - run: dotnet test --no-build --configuration Release
+      - name: Check db/schema.sql matches the migrations
+        run: |
+          dotnet tool restore
+          dotnet ef migrations script --idempotent --project src/LedgerPay.Infrastructure --output /tmp/generated.sql
+          sed '1s/^\xEF\xBB\xBF//' /tmp/generated.sql > /tmp/expected.sql
+          sed '1,/^-- GENERATED SCRIPT STARTS BELOW/d' ../db/schema.sql > /tmp/committed.sql
+          diff /tmp/expected.sql /tmp/committed.sql
