@@ -1,0 +1,27 @@
+.DS_Store
+.idea/
+.vscode/
+
+# Local only: working notes and agent config, never part of the submission
+.claude/
+CLAUDE.md
+docs/internal/
+
+# Secrets. .env.example is the committed template
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
