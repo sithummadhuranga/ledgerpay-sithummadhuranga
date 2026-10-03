@@ -1,4 +1,6 @@
 using LedgerPay.Infrastructure.Persistence;
+using LedgerPay.Infrastructure.Security;
+using LedgerPay.Infrastructure.Seeding;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
@@ -28,9 +30,33 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
         await using var db = NewContext();
         await db.Database.MigrateAsync();
+
+        // The settings and the two system accounts are what every money test needs.
+        await new Seeder(db, new PasswordService(), TimeProvider.System).SeedAsync(TestSeedOptions, CancellationToken.None);
     }
 
     public ValueTask DisposeAsync() => container.DisposeAsync();
+
+    // A database of its own, for tests that change shared settings and would disturb the others.
+    public async Task<string> CreateIsolatedDatabaseAsync()
+    {
+        var builder = new SqlConnectionStringBuilder(AdminConnectionString)
+        {
+            InitialCatalog = "LedgerPayIsolated" + Guid.NewGuid().ToString("N")[..12]
+        };
+
+        await using var db = NewContext(builder.ConnectionString);
+        await db.Database.MigrateAsync();
+        await new Seeder(db, new PasswordService(), TimeProvider.System).SeedAsync(TestSeedOptions, CancellationToken.None);
+        return builder.ConnectionString;
+    }
+
+    private static readonly SeedOptions TestSeedOptions = new()
+    {
+        AdminPassword = "Admin-pass-for-tests-1!",
+        OperatorPassword = "Operator-pass-for-tests-2!",
+        CustomerPassword = "Customer-pass-for-tests-3!"
+    };
 
     public AppDbContext NewContext() => NewContext(AdminConnectionString);
 

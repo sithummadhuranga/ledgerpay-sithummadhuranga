@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddScoped<Seeder>();
