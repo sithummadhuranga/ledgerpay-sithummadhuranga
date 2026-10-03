@@ -1,4 +1,5 @@
 using LedgerPay.Infrastructure.Persistence;
+using LedgerPay.Infrastructure.Persistence.Sql;
 using LedgerPay.Infrastructure.Security;
 using LedgerPay.Infrastructure.Seeding;
 using Microsoft.Data.SqlClient;
@@ -18,6 +19,11 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public string AdminConnectionString { get; private set; } = string.Empty;
 
+    // A limited login with the same grants the real API login gets. Only the test container ever sees its password.
+    public string ApiLoginName => "ledgerpay_api_test";
+
+    public string ApiConnectionString { get; private set; } = string.Empty;
+
     public async ValueTask InitializeAsync()
     {
         await container.StartAsync();
@@ -33,6 +39,24 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
         // The settings and the two system accounts are what every money test needs.
         await new Seeder(db, new PasswordService(), TimeProvider.System).SeedAsync(TestSeedOptions, CancellationToken.None);
+
+        var apiPassword = "Api-" + Guid.NewGuid().ToString("N") + "-Aa1!";
+        await CreateApiLoginAsync(apiPassword);
+        await DatabasePermissions.ApplyAsync(db, ApiLoginName, CancellationToken.None);
+        ApiConnectionString = new SqlConnectionStringBuilder(AdminConnectionString)
+        {
+            UserID = ApiLoginName,
+            Password = apiPassword
+        }.ConnectionString;
+    }
+
+    private async Task CreateApiLoginAsync(string password)
+    {
+        await using var connection = new SqlConnection(ServerConnectionString());
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"CREATE LOGIN [{ApiLoginName}] WITH PASSWORD = '{password}', CHECK_POLICY = OFF;";
+        await command.ExecuteNonQueryAsync();
     }
 
     public ValueTask DisposeAsync() => container.DisposeAsync();

@@ -1,5 +1,6 @@
 using LedgerPay.Application.Abstractions;
 using LedgerPay.Application.Common;
+using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Domain.Constants;
 using LedgerPay.Domain.Entities;
@@ -10,8 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LedgerPay.Application.Transfers;
 
-public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider settingsProvider, TimeProvider clock)
-    : ITransferService
+public sealed class TransferService(
+    IAppDbContext db,
+    LedgerSettingsProvider settingsProvider,
+    IdempotencyService idempotency,
+    TimeProvider clock) : ITransferService
 {
     public async Task<ServiceResult<QuoteResponse>> QuoteAsync(decimal amount, CancellationToken cancellationToken)
     {
@@ -32,8 +36,14 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
     }
 
     public async Task<ServiceResult<TransferResponse>> TransferAsync(
-        Guid userId, TransferRequest request, RequestInfo info, CancellationToken cancellationToken)
+        Guid userId, string? idempotencyKey, TransferRequest request, RequestInfo info, CancellationToken cancellationToken)
     {
+        var keyError = IdempotencyService.ValidateKey(idempotencyKey);
+        if (keyError is not null)
+        {
+            return ServiceResult<TransferResponse>.Fail(keyError);
+        }
+
         // The validator already checks this. The service checks it again, because a request with no recipient
         // would otherwise be matched against wallets whose phone is null.
         if ((request.RecipientWalletNumber is null) == (request.RecipientPhone is null))
@@ -53,8 +63,12 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
 
         var receiverId = await FindReceiverIdAsync(request, cancellationToken);
 
-        return await db.ExecuteInTransactionAsync(
-            token => PostTransferAsync(userId, senderId.Value, receiverId, request, info, token),
+        return await idempotency.RunAsync(
+            userId,
+            idempotencyKey,
+            IdempotencyEndpoints.Transfers,
+            RequestHasher.Hash(request),
+            (record, token) => PostTransferAsync(userId, senderId.Value, receiverId, request, info, record, token),
             cancellationToken);
     }
 
@@ -76,8 +90,16 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
             .SingleOrDefaultAsync(cancellationToken);
     }
 
+    // Runs inside the transaction the idempotency service opened, after it inserted the key.
+    // Nothing is saved here: the idempotency service saves once at the end, with the stored answer.
     private async Task<ServiceResult<TransferResponse>> PostTransferAsync(
-        Guid userId, Guid senderId, Guid? receiverId, TransferRequest request, RequestInfo info, CancellationToken cancellationToken)
+        Guid userId,
+        Guid senderId,
+        Guid? receiverId,
+        TransferRequest request,
+        RequestInfo info,
+        IdempotencyKey record,
+        CancellationToken cancellationToken)
     {
         var settings = await settingsProvider.GetAsync(cancellationToken);
 
@@ -98,21 +120,21 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
         var failure = TransferRules.FirstFailure(sender, receiver, request.Amount, fee, settings);
         if (failure is not null)
         {
-            // A rejected attempt is kept as a Failed row with no entries. It commits on its own, so the
-            // caller sees the same answer if it asks again.
-            AddFailedTransfer(userId, sender, receiver, request, info, failure, now);
-            await db.SaveChangesAsync(cancellationToken);
+            // A rejected attempt is kept as a Failed row with no entries, and the key keeps its answer,
+            // so the same key gets the same rejection when it is sent again.
+            var failed = AddFailedTransfer(userId, sender, receiver, request, info, failure, now);
+            record.TransactionId = failed.Id;
             return ServiceResult<TransferResponse>.Fail(failure);
         }
 
         var completed = await AddCompletedTransferAsync(userId, sender, receiver!, request, info, fee, now, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
+        record.TransactionId = completed.Id;
 
         return ServiceResult<TransferResponse>.Ok(new TransferResponse(
             completed.Reference, request.Amount, fee, request.Amount + fee, sender.Balance, receiver!.WalletNumber, now));
     }
 
-    private void AddFailedTransfer(
+    private Transaction AddFailedTransfer(
         Guid userId, Wallet sender, Wallet? receiver, TransferRequest request, RequestInfo info, string failureCode, DateTime now)
     {
         var transaction = new Transaction
@@ -132,7 +154,8 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
         };
 
         db.Transactions.Add(transaction);
-        db.AuditLogs.Add(NewAudit(AuditActions.TransferFailed, transaction.Reference, failureCode, userId, info, now));
+        db.AuditLogs.Add(AuditEntry.Create(AuditActions.TransferFailed, AuditEntityTypes.Transaction, transaction.Reference, failureCode, userId, info, now));
+        return transaction;
     }
 
     private async Task<Transaction> AddCompletedTransferAsync(
@@ -175,20 +198,7 @@ public sealed class TransferService(IAppDbContext db, LedgerSettingsProvider set
         };
 
         db.Transactions.Add(transaction);
-        db.AuditLogs.Add(NewAudit(AuditActions.Transfer, transaction.Reference, null, userId, info, now));
+        db.AuditLogs.Add(AuditEntry.Create(AuditActions.Transfer, AuditEntityTypes.Transaction, transaction.Reference, null, userId, info, now));
         return transaction;
     }
-
-    private static AuditLog NewAudit(
-        string action, string reference, string? details, Guid userId, RequestInfo info, DateTime now) => new()
-    {
-        CreatedAt = now,
-        ActorUserId = userId,
-        Action = action,
-        EntityType = AuditEntityTypes.Transaction,
-        EntityReference = reference,
-        IpAddress = info.IpAddress,
-        CorrelationId = info.CorrelationId,
-        Details = details
-    };
 }

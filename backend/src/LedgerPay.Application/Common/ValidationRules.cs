@@ -16,8 +16,16 @@ public static class ValidationRules
             .LessThanOrEqualTo(LargestAmount).WithMessage("Amount is too large.");
 
     public static IRuleBuilderOptions<T, string?> WalletNumber<T>(this IRuleBuilder<T, string?> rule) =>
-        rule.Matches(@"\A[0-9]{12}\z").WithMessage("Wallet number must be 12 digits.");
+        rule.NotNull().Matches(@"\A[0-9]{12}\z").WithMessage("Wallet number must be 12 digits.");
+
+    public static IRuleBuilderOptions<T, string> BankReference<T>(this IRuleBuilder<T, string> rule) =>
+        rule.NotNull().Matches(@"\A[A-Za-z0-9]{6,40}\z").WithMessage("Bank reference must be 6 to 40 letters and digits.");
+
+    public const int MaximumNoteLength = 140;
+
+    public static IRuleBuilderOptions<T, string?> Note<T>(this IRuleBuilder<T, string?> rule) =>
+        rule.MaximumLength(MaximumNoteLength).WithMessage($"Note can have at most {MaximumNoteLength} characters.");
 
     public static IRuleBuilderOptions<T, string?> MobileNumber<T>(this IRuleBuilder<T, string?> rule) =>
-        rule.Matches(@"\A\+947[0-9]{8}\z").WithMessage("Mobile number must look like +94771234567.");
+        rule.NotNull().Matches(@"\A\+947[0-9]{8}\z").WithMessage("Mobile number must look like +94771234567.");
 }

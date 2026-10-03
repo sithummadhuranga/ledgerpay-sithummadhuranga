@@ -17,7 +17,7 @@ public class TransferServiceTests(SqlServerFixture sql)
     private static readonly RequestInfo Caller = new("203.0.113.7", "corr-transfer-test");
 
     private static TransferService NewService(AppDbContext db, TimeProvider? clock = null) =>
-        new(db, new LedgerSettingsProvider(db), clock ?? TimeProvider.System);
+        TestServices.Transfers(db, clock);
 
     private static TransferRequest To(Wallet receiver, decimal amount, string? note = null) =>
         new(receiver.WalletNumber, null, amount, note);
@@ -59,7 +59,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 1000.00m, "Rent for October"), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 1000.00m, "Rent for October"), Caller, TestContext.Current.CancellationToken);
 
         Assert.True(result.Succeeded);
         Assert.Equal(1000.00m, result.Value!.Amount);
@@ -80,7 +80,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, new TransferRequest(null, receiverUser.Phone, 500.00m, null), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), new TransferRequest(null, receiverUser.Phone, 500.00m, null), Caller, TestContext.Current.CancellationToken);
 
         Assert.True(result.Succeeded);
         Assert.Equal(receiverWallet.WalletNumber, result.Value!.RecipientWalletNumber);
@@ -94,7 +94,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
 
         var entries = await db.LedgerEntries.AsNoTracking()
             .Where(entry => entry.Transaction.Reference == result.Value!.Reference)
@@ -113,7 +113,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         var (_, receiverWallet) = await FundedCustomerAsync(250.00m);
         await using var db = sql.NewContext();
 
-        await NewService(db).TransferAsync(sender.Id, To(receiverWallet, 1234.56m), Caller, TestContext.Current.CancellationToken);
+        await NewService(db).TransferAsync(sender.Id, TestServices.NewKey(), To(receiverWallet, 1234.56m), Caller, TestContext.Current.CancellationToken);
 
         await using var check = sql.NewContext();
         foreach (var wallet in new[] { senderWallet, receiverWallet })
@@ -132,7 +132,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db, clock).TransferAsync(
-            sender.Id, To(receiverWallet, 1000.00m, "Rent for October"), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 1000.00m, "Rent for October"), Caller, TestContext.Current.CancellationToken);
 
         await using var check = sql.NewContext();
         var transaction = await check.Transactions.AsNoTracking()
@@ -159,7 +159,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.False(result.Succeeded);
         Assert.Equal(ErrorCodes.InsufficientFunds, result.ErrorCode);
@@ -184,7 +184,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, new TransferRequest("999999999999", null, 500.00m, null), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), new TransferRequest("999999999999", null, 500.00m, null), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.RecipientNotFound, result.ErrorCode);
         await using var check = sql.NewContext();
@@ -201,7 +201,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(senderWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(senderWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.SelfTransferNotAllowed, result.ErrorCode);
         await using var check = sql.NewContext();
@@ -226,7 +226,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.WalletFrozen, result.ErrorCode);
         Assert.Equal(ErrorCodes.WalletFrozen, (await OnlyFailedTransferOfAsync(senderWallet)).FailureCode);
@@ -244,7 +244,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.WalletFrozen, result.ErrorCode);
         Assert.Equal(ErrorCodes.WalletFrozen, (await OnlyFailedTransferOfAsync(senderWallet)).FailureCode);
@@ -261,7 +261,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 99.99m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 99.99m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.AmountBelowMinimum, result.ErrorCode);
         var failed = await OnlyFailedTransferOfAsync(senderWallet);
@@ -278,7 +278,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 500_000.01m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 500_000.01m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.AmountAboveMaximum, result.ErrorCode);
         Assert.Equal(ErrorCodes.AmountAboveMaximum, (await OnlyFailedTransferOfAsync(senderWallet)).FailureCode);
@@ -290,14 +290,10 @@ public class TransferServiceTests(SqlServerFixture sql)
     {
         var (sender, senderWallet) = await FundedCustomerAsync(5000.00m);
         var (_, receiverWallet) = await FundedCustomerAsync(0m);
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer(sql.AdminConnectionString, server => server.ExecutionStrategy(dependencies => new TransientRetryStrategy(dependencies)))
-            .AddInterceptors(new FailOnceAfterSave())
-            .Options;
-        await using var db = new AppDbContext(options);
+        await using var db = FaultyContext.Create(sql.AdminConnectionString, new FailOnceAfterSave());
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 1000.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.True(result.Succeeded);
         await using var check = sql.NewContext();
@@ -320,7 +316,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await using var db = sql.NewContext();
 
         var result = await NewService(db).TransferAsync(
-            sender.Id, To(receiverWallet, 200.00m), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), To(receiverWallet, 200.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.ReceiverBalanceLimitExceeded, result.ErrorCode);
         await AssertBalancesMatchLedgerAsync(senderWallet, receiverWallet);
@@ -366,7 +362,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await NewService(db).TransferAsync(
-            operatorUser.Id, To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
+            operatorUser.Id, TestServices.NewKey(), To(receiverWallet, 500.00m), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.WalletNotFound, result.ErrorCode);
     }
@@ -382,7 +378,7 @@ public class TransferServiceTests(SqlServerFixture sql)
         var request = new TransferRequest(
             withNumber ? receiverWallet.WalletNumber : null, withPhone ? "+94771234567" : null, 500.00m, null);
 
-        var result = await NewService(db).TransferAsync(sender.Id, request, Caller, TestContext.Current.CancellationToken);
+        var result = await NewService(db).TransferAsync(sender.Id, TestServices.NewKey(), request, Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.ValidationFailed, result.ErrorCode);
         await using var check = sql.NewContext();

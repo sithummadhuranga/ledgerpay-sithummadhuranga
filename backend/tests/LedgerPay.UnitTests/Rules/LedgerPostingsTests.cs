@@ -69,4 +69,26 @@ public class LedgerPostingsTests
 
         LedgerPostings.EnsureBalanced(entries);
     }
+
+    [Fact]
+    public void Top_up_debits_the_settlement_float_and_credits_the_wallet()
+    {
+        var entries = LedgerPostings.ForTopUp(Sender, Receiver, 2500.00m, Now);
+
+        Assert.Equal(2, entries.Count);
+        var debit = Assert.Single(entries, entry => entry.Debit > 0);
+        var credit = Assert.Single(entries, entry => entry.Credit > 0);
+        Assert.Equal((Sender, 2500.00m), (debit.LedgerAccountId, debit.Debit));
+        Assert.Equal((Receiver, 2500.00m), (credit.LedgerAccountId, credit.Credit));
+    }
+
+    [Fact]
+    public void Top_up_postings_balance_and_carry_the_posting_time()
+    {
+        var entries = LedgerPostings.ForTopUp(Sender, Receiver, 12450.00m, Now);
+
+        LedgerPostings.EnsureBalanced(entries);
+        Assert.Equal(12450.00m, entries.Sum(entry => entry.Credit));
+        Assert.All(entries, entry => Assert.Equal(Now, entry.CreatedAt));
+    }
 }

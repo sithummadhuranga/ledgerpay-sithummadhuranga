@@ -29,6 +29,13 @@ public static class LedgerPostings
         return entries;
     }
 
+    // Dr settlement float (amount), Cr the customer wallet (amount). A top-up has no fee.
+    public static List<LedgerEntry> ForTopUp(Guid settlementAccountId, Guid walletAccountId, decimal amount, DateTime now) =>
+    [
+        new LedgerEntry { LedgerAccountId = settlementAccountId, Debit = amount, CreatedAt = now },
+        new LedgerEntry { LedgerAccountId = walletAccountId, Credit = amount, CreatedAt = now }
+    ];
+
     // A failure here is a bug in the posting code, never bad input, so it throws.
     public static void EnsureBalanced(IEnumerable<LedgerEntry> entries)
     {

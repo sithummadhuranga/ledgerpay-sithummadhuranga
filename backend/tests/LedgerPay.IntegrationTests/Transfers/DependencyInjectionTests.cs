@@ -1,5 +1,7 @@
 using FluentValidation;
 using LedgerPay.Application;
+using LedgerPay.Application.Admin;
+using LedgerPay.Application.TopUps;
 using LedgerPay.Application.Transfers;
 using LedgerPay.Infrastructure;
 using LedgerPay.IntegrationTests.Support;
@@ -23,6 +25,21 @@ public class DependencyInjectionTests(SqlServerFixture sql)
 
         Assert.IsType<TransferService>(service);
         Assert.IsType<TransferRequestValidator>(validator);
+    }
+
+    [Fact]
+    public async Task The_top_up_and_wallet_status_services_and_their_validators_resolve_too()
+    {
+        var services = new ServiceCollection()
+            .AddInfrastructure(sql.AdminConnectionString)
+            .AddApplication();
+        await using var provider = services.BuildServiceProvider(validateScopes: true);
+        await using var scope = provider.CreateAsyncScope();
+
+        Assert.IsType<TopUpService>(scope.ServiceProvider.GetRequiredService<ITopUpService>());
+        Assert.IsType<WalletStatusService>(scope.ServiceProvider.GetRequiredService<IWalletStatusService>());
+        Assert.IsType<TopUpRequestValidator>(scope.ServiceProvider.GetRequiredService<IValidator<TopUpRequest>>());
+        Assert.IsType<WalletStatusRequestValidator>(scope.ServiceProvider.GetRequiredService<IValidator<WalletStatusRequest>>());
     }
 
     [Fact]
