@@ -1,3 +1,4 @@
+using LedgerPay.Application.Admin;
 using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Application.TopUps;
@@ -24,4 +25,7 @@ internal static class TestServices
         clock ??= TimeProvider.System;
         return new TopUpService(db, new LedgerSettingsProvider(db), new IdempotencyService(db, clock), clock);
     }
+
+    public static WalletStatusService WalletStatus(AppDbContext db, TimeProvider? clock = null) =>
+        new(db, clock ?? TimeProvider.System);
 }
