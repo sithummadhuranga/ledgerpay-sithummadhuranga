@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace LedgerPay.Infrastructure.Persistence;
+namespace LedgerPay.Infrastructure.Persistence.Sql;
 
 public static class DatabasePermissions
 {

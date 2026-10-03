@@ -1,6 +1,6 @@
 using LedgerPay.Domain.Rules;
 
-namespace LedgerPay.UnitTests;
+namespace LedgerPay.UnitTests.Rules;
 
 public class PasswordPolicyTests
 {

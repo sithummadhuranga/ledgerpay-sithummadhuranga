@@ -1,4 +1,6 @@
 using LedgerPay.Infrastructure.Persistence;
+using LedgerPay.Infrastructure.Persistence.Sql;
+using LedgerPay.IntegrationTests.Support;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 

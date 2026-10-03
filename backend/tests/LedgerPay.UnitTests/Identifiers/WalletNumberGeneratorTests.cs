@@ -1,6 +1,6 @@
-using LedgerPay.Domain.Rules;
+using LedgerPay.Domain.Identifiers;
 
-namespace LedgerPay.UnitTests;
+namespace LedgerPay.UnitTests.Identifiers;
 
 public class WalletNumberGeneratorTests
 {

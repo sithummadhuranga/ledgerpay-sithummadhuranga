@@ -1,4 +1,4 @@
-using LedgerPay.Application.Common.Abstractions;
+using LedgerPay.Application.Abstractions;
 using LedgerPay.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 

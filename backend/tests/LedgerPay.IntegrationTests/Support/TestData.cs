@@ -4,7 +4,7 @@ using LedgerPay.Domain.Enums;
 using LedgerPay.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace LedgerPay.IntegrationTests;
+namespace LedgerPay.IntegrationTests.Support;
 
 internal static class TestData
 {

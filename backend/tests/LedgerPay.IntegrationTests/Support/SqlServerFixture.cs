@@ -3,9 +3,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
-[assembly: AssemblyFixture(typeof(LedgerPay.IntegrationTests.SqlServerFixture))]
+[assembly: AssemblyFixture(typeof(LedgerPay.IntegrationTests.Support.SqlServerFixture))]
 
-namespace LedgerPay.IntegrationTests;
+namespace LedgerPay.IntegrationTests.Support;
 
 // One SQL Server container for the whole run. Starting one per test is far too slow under Rosetta.
 public sealed class SqlServerFixture : IAsyncLifetime

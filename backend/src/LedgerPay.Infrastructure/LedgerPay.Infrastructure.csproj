@@ -15,4 +15,8 @@
     <EmbeddedResource Include="Persistence\Sql\*.sql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="LedgerPay.Infrastructure.Persistence.Sql" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,4 @@
-using LedgerPay.Application.Common.Abstractions;
+using LedgerPay.Application.Abstractions;
 using LedgerPay.Infrastructure.Persistence;
 using LedgerPay.Infrastructure.Security;
 using LedgerPay.Infrastructure.Seeding;

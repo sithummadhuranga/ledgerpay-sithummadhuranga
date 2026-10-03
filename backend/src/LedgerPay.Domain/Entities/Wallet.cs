@@ -1,5 +1,5 @@
 using LedgerPay.Domain.Enums;
-using LedgerPay.Domain.Rules;
+using LedgerPay.Domain.Identifiers;
 
 namespace LedgerPay.Domain.Entities;
 

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace LedgerPay.Domain.Rules;
+namespace LedgerPay.Domain.Identifiers;
 
 public static class WalletNumberGenerator
 {

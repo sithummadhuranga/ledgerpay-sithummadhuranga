@@ -1,4 +1,4 @@
-using LedgerPay.Application.Common.Abstractions;
+using LedgerPay.Application.Abstractions;
 using LedgerPay.Domain.Constants;
 using LedgerPay.Domain.Entities;
 using LedgerPay.Domain.Enums;

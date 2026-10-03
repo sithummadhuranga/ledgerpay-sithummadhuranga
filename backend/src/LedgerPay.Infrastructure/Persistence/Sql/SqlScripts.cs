@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace LedgerPay.Infrastructure.Persistence;
+namespace LedgerPay.Infrastructure.Persistence.Sql;
 
 internal static class SqlScripts
 {
