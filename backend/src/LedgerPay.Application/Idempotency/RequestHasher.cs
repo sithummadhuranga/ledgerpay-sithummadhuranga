@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using LedgerPay.Application.TopUps;
 using LedgerPay.Application.Transfers;
 
 namespace LedgerPay.Application.Idempotency;
@@ -11,6 +12,9 @@ public static class RequestHasher
 {
     public static string Hash(TransferRequest request) => Sha256(
         "transfer", request.RecipientWalletNumber, request.RecipientPhone, Amount(request.Amount), request.Note);
+
+    public static string Hash(TopUpRequest request) => Sha256(
+        "topup", request.WalletNumber, Amount(request.Amount), request.BankReference.ToUpperInvariant(), request.Note);
 
     private static string Amount(decimal amount) => amount.ToString("0.00", CultureInfo.InvariantCulture);
 

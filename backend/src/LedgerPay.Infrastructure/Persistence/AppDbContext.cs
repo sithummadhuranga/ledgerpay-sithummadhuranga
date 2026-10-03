@@ -1,3 +1,4 @@
+using System.Data;
 using LedgerPay.Application.Abstractions;
 using LedgerPay.Domain.Entities;
 using Microsoft.Data.SqlClient;
@@ -49,6 +50,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             .ToListAsync(cancellationToken);
 
         return rows.SingleOrDefault();
+    }
+
+    public async Task LockResourceAsync(string resource, CancellationToken cancellationToken)
+    {
+        // sp_getapplock holds the lock until the transaction ends. A negative result means it was not granted.
+        var result = new SqlParameter("result", SqlDbType.Int) { Direction = ParameterDirection.Output };
+        await Database.ExecuteSqlRawAsync(
+            "EXEC @result = sp_getapplock @Resource = @resource, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000",
+            [result, new SqlParameter("resource", resource)],
+            cancellationToken);
+
+        if ((int)result.Value < 0)
+        {
+            throw new InvalidOperationException($"Could not lock {resource} (code {result.Value}).");
+        }
     }
 
     // 2601 and 2627 are SQL Server's errors for a value that a unique index already holds.

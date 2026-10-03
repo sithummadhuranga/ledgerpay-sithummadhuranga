@@ -5,8 +5,6 @@ namespace LedgerPay.Application.Transfers;
 
 public sealed class TransferRequestValidator : AbstractValidator<TransferRequest>
 {
-    public const int MaximumNoteLength = 140;
-
     public TransferRequestValidator()
     {
         RuleFor(request => request.Amount).MoneyAmount();
@@ -17,8 +15,7 @@ public sealed class TransferRequestValidator : AbstractValidator<TransferRequest
         RuleFor(request => request.RecipientPhone).MobileNumber()
             .When(request => request.RecipientPhone is not null);
 
-        RuleFor(request => request.Note).MaximumLength(MaximumNoteLength)
-            .WithMessage($"Note can have at most {MaximumNoteLength} characters.");
+        RuleFor(request => request.Note).Note();
 
         RuleFor(request => request).Custom((request, context) =>
         {

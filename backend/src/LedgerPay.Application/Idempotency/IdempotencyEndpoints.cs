@@ -4,4 +4,5 @@ namespace LedgerPay.Application.Idempotency;
 public static class IdempotencyEndpoints
 {
     public const string Transfers = "POST /transfers";
+    public const string TopUps = "POST /admin/topups";
 }
