@@ -1,3 +1,5 @@
+using LedgerPay.IntegrationTests.Support;
+
 namespace LedgerPay.IntegrationTests.Database;
 
 public class AppendOnlyTests(SqlServerFixture sql)

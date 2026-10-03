@@ -1,5 +1,6 @@
 using LedgerPay.Infrastructure;
 using LedgerPay.Infrastructure.Persistence;
+using LedgerPay.Infrastructure.Persistence.Sql;
 using LedgerPay.Infrastructure.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

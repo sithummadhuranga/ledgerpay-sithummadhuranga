@@ -1,4 +1,4 @@
-namespace LedgerPay.Application.Common.Abstractions;
+namespace LedgerPay.Application.Abstractions;
 
 public interface IPasswordService
 {

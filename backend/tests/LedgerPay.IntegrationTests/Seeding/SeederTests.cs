@@ -2,6 +2,7 @@ using LedgerPay.Domain.Constants;
 using LedgerPay.Domain.Enums;
 using LedgerPay.Infrastructure.Security;
 using LedgerPay.Infrastructure.Seeding;
+using LedgerPay.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
 
 namespace LedgerPay.IntegrationTests.Seeding;

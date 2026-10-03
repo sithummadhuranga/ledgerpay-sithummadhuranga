@@ -1,4 +1,4 @@
-using LedgerPay.Application.Common.Abstractions;
+using LedgerPay.Application.Abstractions;
 using LedgerPay.Infrastructure.Persistence;
 using LedgerPay.Infrastructure.Security;
 using LedgerPay.Infrastructure.Seeding;
@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddScoped<Seeder>();

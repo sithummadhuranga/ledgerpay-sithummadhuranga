@@ -1,4 +1,5 @@
 using LedgerPay.Domain.Enums;
+using LedgerPay.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
 
 namespace LedgerPay.IntegrationTests.Database;
