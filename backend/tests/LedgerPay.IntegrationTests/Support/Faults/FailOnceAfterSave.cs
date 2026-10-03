@@ -2,15 +2,17 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace LedgerPay.IntegrationTests.Support.Faults;
 
-// Fails after the rows are written but before the transaction commits, which is the worst moment for a retry.
+// Fails once, right after the second save of a money operation. The first save writes the idempotency key
+// and the second writes the transfer, the entries and the stored response, so the rows are in the database
+// but the transaction has not committed. That is the worst moment for a retry.
 internal sealed class FailOnceAfterSave : SaveChangesInterceptor
 {
-    private int hasFailed;
+    private int saves;
 
     public override ValueTask<int> SavedChangesAsync(
         SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
-        if (Interlocked.Exchange(ref hasFailed, 1) == 0)
+        if (Interlocked.Increment(ref saves) == 2)
         {
             throw new TransientTestException();
         }

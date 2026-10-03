@@ -24,4 +24,7 @@ public interface IAppDbContext
 
     // Reads a wallet row and holds an update lock on it until the transaction ends.
     Task<Wallet?> LockWalletAsync(Guid walletId, CancellationToken cancellationToken);
+
+    // True when a save failed because a unique index already holds the value.
+    bool IsDuplicateKey(DbUpdateException exception);
 }

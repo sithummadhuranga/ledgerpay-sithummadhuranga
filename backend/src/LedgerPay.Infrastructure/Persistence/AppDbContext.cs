@@ -1,5 +1,6 @@
 using LedgerPay.Application.Abstractions;
 using LedgerPay.Domain.Entities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace LedgerPay.Infrastructure.Persistence;
@@ -49,6 +50,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
         return rows.SingleOrDefault();
     }
+
+    // 2601 and 2627 are SQL Server's errors for a value that a unique index already holds.
+    public bool IsDuplicateKey(DbUpdateException exception) =>
+        exception.InnerException is SqlException { Number: 2601 or 2627 };
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

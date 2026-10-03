@@ -16,9 +16,9 @@ public class TransferConcurrencyTests(SqlServerFixture sql)
     private async Task<ServiceResult<TransferResponse>> SendAsync(Guid userId, Wallet receiver, decimal amount)
     {
         await using var db = sql.NewContext();
-        var service = new TransferService(db, new LedgerSettingsProvider(db), TimeProvider.System);
+        var service = TestServices.Transfers(db);
         return await service.TransferAsync(
-            userId, new TransferRequest(receiver.WalletNumber, null, amount, null), Caller, CancellationToken.None);
+            userId, TestServices.NewKey(), new TransferRequest(receiver.WalletNumber, null, amount, null), Caller, CancellationToken.None);
     }
 
     private async Task<(User User, Wallet Wallet)> CustomerAsync(decimal balance)

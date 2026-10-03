@@ -13,8 +13,7 @@ public class SettingsDrivenTests(SqlServerFixture sql)
 {
     private static readonly RequestInfo Caller = new("203.0.113.9", "corr-settings-test");
 
-    private static TransferService NewService(AppDbContext db) =>
-        new(db, new LedgerSettingsProvider(db), TimeProvider.System);
+    private static TransferService NewService(AppDbContext db) => TestServices.Transfers(db);
 
     private static async Task SetAsync(string connectionString, string key, decimal value)
     {
@@ -50,11 +49,11 @@ public class SettingsDrivenTests(SqlServerFixture sql)
         var service = NewService(db);
 
         var below = await service.TransferAsync(
-            sender.Id, new TransferRequest(receiverWallet.WalletNumber, null, 400.00m, null), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), new TransferRequest(receiverWallet.WalletNumber, null, 400.00m, null), Caller, TestContext.Current.CancellationToken);
         var above = await service.TransferAsync(
-            sender.Id, new TransferRequest(receiverWallet.WalletNumber, null, 1200.00m, null), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), new TransferRequest(receiverWallet.WalletNumber, null, 1200.00m, null), Caller, TestContext.Current.CancellationToken);
         var inside = await service.TransferAsync(
-            sender.Id, new TransferRequest(receiverWallet.WalletNumber, null, 800.00m, null), Caller, TestContext.Current.CancellationToken);
+            sender.Id, TestServices.NewKey(), new TransferRequest(receiverWallet.WalletNumber, null, 800.00m, null), Caller, TestContext.Current.CancellationToken);
 
         Assert.Equal(ErrorCodes.AmountBelowMinimum, below.ErrorCode);
         Assert.Equal(ErrorCodes.AmountAboveMaximum, above.ErrorCode);
