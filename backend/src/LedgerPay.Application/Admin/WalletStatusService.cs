@@ -18,6 +18,12 @@ public sealed class WalletStatusService(IAppDbContext db, TimeProvider clock) : 
     private async Task<ServiceResult<WalletStatusResponse>> ChangeAsync(
         Guid actorUserId, string walletNumber, WalletStatusRequest request, RequestInfo info, CancellationToken cancellationToken)
     {
+        // The validator checks this first. It is checked again here because a missing status must never read as Active.
+        if (request.Status is not { } status)
+        {
+            return ServiceResult<WalletStatusResponse>.Fail(ErrorCodes.ValidationFailed);
+        }
+
         var walletId = await db.Wallets.AsNoTracking()
             .Where(candidate => candidate.WalletNumber == walletNumber)
             .Select(candidate => (Guid?)candidate.Id)
@@ -32,7 +38,7 @@ public sealed class WalletStatusService(IAppDbContext db, TimeProvider clock) : 
         var wallet = await db.LockWalletAsync(walletId.Value, cancellationToken)
             ?? throw new InvalidOperationException($"Wallet {walletId} disappeared while its status was changed.");
 
-        if (wallet.Status == request.Status)
+        if (wallet.Status == status)
         {
             return ServiceResult<WalletStatusResponse>.Fail(ErrorCodes.WalletAlreadyInState);
         }
@@ -40,12 +46,12 @@ public sealed class WalletStatusService(IAppDbContext db, TimeProvider clock) : 
         var reason = request.Reason.Trim();
         var now = clock.GetUtcNow().UtcDateTime;
 
-        wallet.Status = request.Status;
+        wallet.Status = status;
         wallet.StatusReason = reason;
         wallet.StatusChangedByUserId = actorUserId;
         wallet.StatusChangedAt = now;
 
-        var action = request.Status == WalletStatus.Frozen ? AuditActions.WalletFrozen : AuditActions.WalletUnfrozen;
+        var action = status == WalletStatus.Frozen ? AuditActions.WalletFrozen : AuditActions.WalletUnfrozen;
         db.AuditLogs.Add(AuditEntry.Create(action, AuditEntityTypes.Wallet, wallet.WalletNumber, reason, actorUserId, info, now));
 
         await db.SaveChangesAsync(cancellationToken);
