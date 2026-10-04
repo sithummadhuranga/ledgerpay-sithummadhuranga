@@ -14,7 +14,8 @@ END
 ELSE IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @ApiUser)
     EXEC(N'CREATE USER ' + @quoted + N' WITH PASSWORD = N''' + @escaped + N'''');
 ELSE
-    -- Running the setup again with a new password changes it, so a password can be rotated.
+    -- Running the setup again with a new password changes it, so a password can be rotated. This only works for a user made
+    -- with a password. A user that belongs to a server login has no password of its own, and the statement refuses it.
     EXEC(N'ALTER USER ' + @quoted + N' WITH PASSWORD = N''' + @escaped + N'''');
 
 -- No DELETE is granted anywhere. The revoke removes a schema-wide INSERT or UPDATE grant left by an earlier version.

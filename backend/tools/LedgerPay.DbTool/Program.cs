@@ -47,6 +47,12 @@ try
 
         // Set only for Azure SQL, where the user is made inside the database with this password.
         var apiPassword = builder.Configuration["Database:ApiUserPassword"];
+        if (apiPassword is { Length: > 128 })
+        {
+            Console.Error.WriteLine("Database:ApiUserPassword can have at most 128 characters.");
+            return 1;
+        }
+
         await DatabasePermissions.ApplyAsync(db, apiUser, CancellationToken.None, string.IsNullOrEmpty(apiPassword) ? null : apiPassword);
         Console.WriteLine($"Permissions applied for {apiUser}{(string.IsNullOrEmpty(apiPassword) ? "" : " as a user of the database")}.");
     }
