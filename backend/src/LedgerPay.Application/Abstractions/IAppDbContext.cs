@@ -18,12 +18,16 @@ public interface IAppDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
-    // Runs the work in one database transaction, inside the retrying execution strategy.
+    // Runs the work in one database transaction, inside the retrying execution strategy. It clears the change
+    // tracker first, so nothing the caller loaded before the call is tracked inside it.
     // After a transient fault the strategy runs the whole delegate again, so it must be safe to repeat.
     Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken);
 
     // Reads a wallet row and holds an update lock on it until the transaction ends.
     Task<Wallet?> LockWalletAsync(Guid walletId, CancellationToken cancellationToken);
+
+    // Reads a user row and holds an update lock on it until the transaction ends.
+    Task<User?> LockUserAsync(Guid userId, CancellationToken cancellationToken);
 
     // Holds a named lock until the transaction ends. Two transactions asking for the same name run one after the other.
     Task LockResourceAsync(string resource, CancellationToken cancellationToken);

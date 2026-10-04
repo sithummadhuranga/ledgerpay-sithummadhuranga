@@ -4,7 +4,7 @@ DECLARE @quoted nvarchar(260) = QUOTENAME(@ApiUser);
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @ApiUser)
     EXEC(N'CREATE USER ' + @quoted + N' FOR LOGIN ' + @quoted);
 
--- No DELETE is granted anywhere. The revokes make a re-run clean up any wider grant from an earlier version.
+-- No DELETE is granted anywhere. The revoke removes a schema-wide INSERT or UPDATE grant left by an earlier version.
 EXEC(N'REVOKE INSERT, UPDATE ON SCHEMA::dbo FROM ' + @quoted);
 EXEC(N'GRANT SELECT ON SCHEMA::dbo TO ' + @quoted);
 

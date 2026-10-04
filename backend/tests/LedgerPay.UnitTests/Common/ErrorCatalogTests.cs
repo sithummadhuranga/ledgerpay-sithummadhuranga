@@ -30,6 +30,10 @@ public class ErrorCatalogTests
         (ErrorCodes.ReceiverBalanceLimitExceeded, 422),
         (ErrorCodes.BalanceLimitExceeded, 422),
         (ErrorCodes.RateLimited, 429),
+        (ErrorCodes.NotFound, 404),
+        (ErrorCodes.MethodNotAllowed, 405),
+        (ErrorCodes.PayloadTooLarge, 413),
+        (ErrorCodes.UnsupportedMediaType, 415),
         (ErrorCodes.InternalError, 500)
     ];
 
