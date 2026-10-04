@@ -11,11 +11,11 @@ namespace LedgerPay.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-[AllowAnonymous]
 [EnableRateLimiting(RateLimitPolicies.Auth)]
 public sealed class AuthController(IAuthService auth, ISessionService sessions, RefreshCookie cookie) : ControllerBase
 {
     [HttpPost("register")]
+    [AllowAnonymous]
     [EndpointSummary("Create a customer account with an empty wallet. Anyone may call it.")]
     [ProducesResponseType<RegisterResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, Problems.ContentType)]
@@ -27,6 +27,7 @@ public sealed class AuthController(IAuthService auth, ISessionService sessions, 
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [EndpointSummary("Sign in and get an access token that lasts 15 minutes. The refresh token is set as an HttpOnly cookie. Anyone may call it.")]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, Problems.ContentType)]
@@ -35,6 +36,12 @@ public sealed class AuthController(IAuthService auth, ISessionService sessions, 
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await auth.LoginAsync(request, HttpContext.ToRequestInfo(), cancellationToken);
+        if (result.Succeeded)
+        {
+            // Signing in again in a browser ends the session it held, so switching users leaves no session nobody can reach.
+            await sessions.EndAsync(cookie.Read(Request), HttpContext.ToRequestInfo(), cancellationToken);
+        }
+
         return this.FromResult(result, signedIn =>
         {
             cookie.Set(Response, signedIn.Refresh);
@@ -43,6 +50,7 @@ public sealed class AuthController(IAuthService auth, ISessionService sessions, 
     }
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
     [SameOriginOnly]
     [EnableRateLimiting(RateLimitPolicies.Refresh)]
     [EndpointSummary("Swap the refresh cookie for a new access token and a new cookie. Anyone with a cookie may call it.")]
@@ -70,6 +78,7 @@ public sealed class AuthController(IAuthService auth, ISessionService sessions, 
     }
 
     [HttpPost("logout")]
+    [AllowAnonymous]
     [SameOriginOnly]
     [EnableRateLimiting(RateLimitPolicies.Refresh)]
     [EndpointSummary("End the session of the refresh cookie and remove the cookie. Always answers 204.")]

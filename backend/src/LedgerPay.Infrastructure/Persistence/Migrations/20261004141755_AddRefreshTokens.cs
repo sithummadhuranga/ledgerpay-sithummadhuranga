@@ -39,15 +39,20 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_FamilyId_UserId",
+                table: "RefreshTokens",
+                columns: new[] { "FamilyId", "UserId" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_TokenHash",
                 table: "RefreshTokens",
                 column: "TokenHash",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_UserId_FamilyId",
+                name: "IX_RefreshTokens_UserId",
                 table: "RefreshTokens",
-                columns: new[] { "UserId", "FamilyId" });
+                column: "UserId");
         }
 
         /// <inheritdoc />

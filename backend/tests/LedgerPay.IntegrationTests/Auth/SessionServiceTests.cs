@@ -278,6 +278,57 @@ public class SessionServiceTests(SqlServerFixture sql)
         Assert.Equal(2, (await RowsAsync(userId)).Count);
         Assert.True((await RefreshAsync(second, clock)).Succeeded);
         Assert.Equal(0, await AuditCountAsync(userId, AuditActions.RefreshReuseDetected));
+        Assert.Equal(1, await AuditCountAsync(userId, AuditActions.RefreshGraceUsed));
+    }
+
+    [Fact]
+    public async Task The_grace_covers_one_replacement_so_a_token_two_replacements_back_ends_the_session()
+    {
+        var (userId, email) = await NewUserAsync();
+        var clock = NewClock();
+        var first = (await SignInAsync(email, clock)).Refresh.Token;
+        var second = (await RefreshAsync(first, clock)).Value!.Refresh!.Token;
+        clock.Advance(TimeSpan.FromSeconds(2));
+        var third = (await RefreshAsync(second, clock)).Value!.Refresh!.Token;
+        clock.Advance(TimeSpan.FromSeconds(2));
+
+        var lateFirst = await RefreshAsync(first, clock);
+
+        Assert.Equal(ErrorCodes.InvalidRefreshToken, lateFirst.ErrorCode);
+        Assert.Equal(ErrorCodes.InvalidRefreshToken, (await RefreshAsync(third, clock)).ErrorCode);
+        Assert.Equal(1, await AuditCountAsync(userId, AuditActions.RefreshReuseDetected));
+    }
+
+    [Fact]
+    public async Task A_grace_use_is_on_record_with_the_address_it_came_from()
+    {
+        var (userId, email) = await NewUserAsync();
+        var clock = NewClock();
+        var first = (await SignInAsync(email, clock)).Refresh.Token;
+        await RefreshAsync(first, clock);
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        await RefreshAsync(first, clock);
+
+        await using var db = sql.NewContext();
+        var entry = await db.AuditLogs.AsNoTracking().SingleAsync(log => log.ActorUserId == userId && log.Action == AuditActions.RefreshGraceUsed, TestContext.Current.CancellationToken);
+        Assert.Equal(AuditEntityTypes.Session, entry.EntityType);
+        Assert.Equal("203.0.113.70", entry.IpAddress);
+    }
+
+    [Fact]
+    public async Task The_keys_of_the_token_rows_are_made_when_they_are_added_and_the_replacement_points_at_the_new_one()
+    {
+        var (userId, email) = await NewUserAsync();
+        var clock = NewClock();
+        var first = (await SignInAsync(email, clock)).Refresh.Token;
+        await RefreshAsync(first, clock);
+
+        var rows = await RowsAsync(userId);
+
+        Assert.NotEqual(Guid.Empty, rows[0].Id);
+        Assert.NotEqual(rows[0].Id, rows[1].Id);
+        Assert.Equal(rows[1].Id, rows[0].ReplacedById);
     }
 
     [Fact]

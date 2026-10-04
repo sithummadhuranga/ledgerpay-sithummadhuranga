@@ -21,8 +21,11 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         // Every refresh finds its row by the hash of the token that came in.
         builder.HasIndex(token => token.TokenHash).IsUnique();
 
-        // The sessions page and a revoke look up the rows of one session or of one user.
-        builder.HasIndex(token => new { token.UserId, token.FamilyId });
+        // Reuse, sign out and ending a session look up the rows of one session, with the user when a user asks.
+        builder.HasIndex(token => new { token.FamilyId, token.UserId });
+
+        // The sessions page lists the rows of one user.
+        builder.HasIndex(token => token.UserId);
 
         builder.HasOne<User>()
             .WithMany()

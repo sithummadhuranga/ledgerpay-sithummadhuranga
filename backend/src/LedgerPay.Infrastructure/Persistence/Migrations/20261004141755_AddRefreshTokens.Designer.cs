@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LedgerPay.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261004134915_AddRefreshTokens")]
+    [Migration("20261004141755_AddRefreshTokens")]
     partial class AddRefreshTokens
     {
         /// <inheritdoc />
@@ -260,7 +260,9 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.HasIndex("UserId", "FamilyId");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FamilyId", "UserId");
 
                     b.ToTable("RefreshTokens", (string)null);
                 });
