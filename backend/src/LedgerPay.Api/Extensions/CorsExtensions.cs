@@ -19,7 +19,7 @@ public static class CorsExtensions
         services.AddCors(options => options.AddDefaultPolicy(policy => policy
             .WithOrigins(origins)
             .WithMethods("GET", "POST", "PATCH")
-            .WithHeaders("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id")
+            .WithHeaders("Authorization", "Content-Type", ControllerResultExtensions.IdempotencyKeyHeader, "X-Correlation-Id")
             .WithExposedHeaders("Retry-After", "Idempotent-Replayed", "X-Correlation-Id")
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10))));
 

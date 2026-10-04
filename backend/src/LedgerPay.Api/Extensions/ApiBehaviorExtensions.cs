@@ -3,6 +3,7 @@ using LedgerPay.Api.Errors;
 using LedgerPay.Api.Filters;
 using LedgerPay.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace LedgerPay.Api.Extensions;
@@ -18,6 +19,10 @@ public static class ApiBehaviorExtensions
                 // MVC's own required check would answer before the validator runs.
                 options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
                 options.Filters.Add<ValidationFilter>();
+
+                // Every action needs a signed-in user, so a new controller is closed until it says otherwise.
+                // Public actions have to say [AllowAnonymous].
+                options.Filters.Add(new AuthorizeFilter());
             })
             .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
             .ConfigureApiBehaviorOptions(options =>

@@ -41,6 +41,20 @@ public class WalletStatusServiceTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_request_without_a_status_is_refused_and_changes_nothing()
+    {
+        var (user, wallet) = await CustomerAsync();
+        await SetAsync(user.Id, wallet.WalletNumber, WalletStatus.Frozen, "Checking a report");
+        await using var db = sql.NewContext();
+
+        var result = await TestServices.WalletStatus(db).SetStatusAsync(
+            Guid.NewGuid(), wallet.WalletNumber, new WalletStatusRequest(null, "Checking a report"), Caller, CancellationToken.None);
+
+        Assert.Equal(ErrorCodes.ValidationFailed, result.ErrorCode);
+        Assert.Equal(WalletStatus.Frozen, (await StoredAsync(wallet)).Status);
+    }
+
+    [Fact]
     public async Task Freezing_a_wallet_stores_the_status_the_reason_the_actor_and_the_time()
     {
         var (backOffice, _) = await CustomerAsync();

@@ -16,6 +16,14 @@ public class WalletStatusRequestValidatorTests
     }
 
     [Fact]
+    public void A_missing_status_is_rejected_and_does_not_become_active()
+    {
+        var result = validator.Validate(new WalletStatusRequest(null, "Valid reason"));
+
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(WalletStatusRequest.Status));
+    }
+
+    [Fact]
     public void An_unknown_status_value_is_rejected()
     {
         var result = validator.Validate(new WalletStatusRequest((WalletStatus)7, "Valid reason"));

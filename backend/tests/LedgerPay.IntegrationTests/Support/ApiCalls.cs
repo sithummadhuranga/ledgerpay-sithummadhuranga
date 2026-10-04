@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using LedgerPay.Infrastructure.Seeding;
 
 namespace LedgerPay.IntegrationTests.Support;
 
@@ -65,6 +66,68 @@ internal static class ApiCalls
         return request;
     }
 
+    public static Task<string> OperatorTokenAsync(HttpClient client) =>
+        TokenAsync(client, SeedData.OperatorEmail, SqlServerFixture.TestSeedOptions.OperatorPassword);
+
+    public static Task<string> AdminTokenAsync(HttpClient client) =>
+        TokenAsync(client, SeedData.AdminEmail, SqlServerFixture.TestSeedOptions.AdminPassword);
+
+    public static string NewKey() => Guid.NewGuid().ToString();
+
+    public static string NewBankReference() => "BANK" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+
+    public static Task<HttpResponseMessage> SendAsync(
+        HttpClient client, HttpMethod method, string url, string? token, object? body = null, string? idempotencyKey = null)
+    {
+        var request = WithBearer(method, url, token);
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
+
+        return client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    public static Task<HttpResponseMessage> TopUpAsync(
+        HttpClient client, string operatorToken, string walletNumber, decimal amount, string? bankReference = null, string? key = null) =>
+        SendAsync(client, HttpMethod.Post, "/api/v1/admin/topups", operatorToken,
+            new { walletNumber, amount, bankReference = bankReference ?? NewBankReference() }, key ?? NewKey());
+
+    public static Task<HttpResponseMessage> TransferAsync(
+        HttpClient client, string token, object body, string? key = null) =>
+        SendAsync(client, HttpMethod.Post, "/api/v1/transfers", token, body, key ?? NewKey());
+
+    public static Task<HttpResponseMessage> SetStatusAsync(
+        HttpClient client, string token, string walletNumber, object body) =>
+        SendAsync(client, HttpMethod.Patch, $"/api/v1/admin/wallets/{walletNumber}/status", token, body);
+
+    // Registers a customer, signs in, and tops the wallet up through the operator endpoint when asked to.
+    public static async Task<TestCustomer> NewCustomerAsync(HttpClient client, decimal fundedWith = 0m)
+    {
+        var email = NewEmail();
+        var phone = NewPhone();
+        var registered = await RegisterAsync(client, RegisterBody(email, phone));
+        registered.EnsureSuccessStatusCode();
+        using var registeredBody = await ReadAsync(registered);
+        var walletNumber = registeredBody.RootElement.GetProperty("walletNumber").GetString()!;
+
+        var token = await TokenAsync(client, email, Password);
+        if (fundedWith > 0)
+        {
+            var operatorToken = await OperatorTokenAsync(client);
+            (await TopUpAsync(client, operatorToken, walletNumber, fundedWith)).EnsureSuccessStatusCode();
+        }
+
+        return new TestCustomer(email, phone, walletNumber, token);
+    }
+
     public static Task<HttpResponseMessage> GetAsync(HttpClient client, string url, string? token) =>
         client.SendAsync(WithBearer(HttpMethod.Get, url, token), TestContext.Current.CancellationToken);
 }
+
+internal sealed record TestCustomer(string Email, string Phone, string WalletNumber, string Token);

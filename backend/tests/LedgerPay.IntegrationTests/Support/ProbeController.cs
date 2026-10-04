@@ -25,6 +25,10 @@ public sealed class ProbeController : ControllerBase
     [Authorize(Roles = RoleNames.Operator)]
     public IActionResult Operators() => Ok(new { ok = true });
 
+    // No attribute on purpose: the default policy must still ask for a token.
+    [HttpGet("unmarked")]
+    public IActionResult Unmarked() => Ok(new { ok = true });
+
     [HttpGet("anyone")]
     [AllowAnonymous]
     public IActionResult Anyone() => Ok(new { ok = true });

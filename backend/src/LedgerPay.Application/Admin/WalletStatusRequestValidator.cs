@@ -9,7 +9,7 @@ public sealed class WalletStatusRequestValidator : AbstractValidator<WalletStatu
 
     public WalletStatusRequestValidator()
     {
-        RuleFor(request => request.Status).IsInEnum();
+        RuleFor(request => request.Status).NotNull().IsInEnum();
 
         // Both limits are counted without the spaces around the text, because the service stores the trimmed reason.
         RuleFor(request => request.Reason)
