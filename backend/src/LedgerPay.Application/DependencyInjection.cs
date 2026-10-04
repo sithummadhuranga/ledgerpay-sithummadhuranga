@@ -1,6 +1,7 @@
 using FluentValidation;
 using LedgerPay.Application.Admin;
 using LedgerPay.Application.Auth;
+using LedgerPay.Application.BackOffice;
 using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Application.TopUps;
@@ -23,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITopUpService, TopUpService>();
         services.AddScoped<IWalletStatusService, WalletStatusService>();
+        services.AddScoped<IStaffService, StaffService>();
+        services.AddScoped<IBackOfficeQueries, BackOfficeQueries>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<ITransactionQueries, TransactionQueries>();
 
@@ -32,6 +35,10 @@ public static class DependencyInjection
         services.AddSingleton<IValidator<TransferRequest>, TransferRequestValidator>();
         services.AddSingleton<IValidator<TopUpRequest>, TopUpRequestValidator>();
         services.AddSingleton<IValidator<WalletStatusRequest>, WalletStatusRequestValidator>();
+        services.AddSingleton<IValidator<StaffRestrictionRequest>, StaffRestrictionRequestValidator>();
+        services.AddSingleton<IValidator<UserSearchQuery>, UserSearchQueryValidator>();
+        services.AddSingleton<IValidator<StaffTransactionQuery>, StaffTransactionQueryValidator>();
+        services.AddSingleton<IValidator<AuditQuery>, AuditQueryValidator>();
         services.AddSingleton<IValidator<LookupQuery>, LookupQueryValidator>();
         services.AddSingleton<IValidator<HistoryQuery>, HistoryQueryValidator>();
 

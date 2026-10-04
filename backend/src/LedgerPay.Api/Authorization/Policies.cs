@@ -11,6 +11,9 @@ public static class Policies
     public const string TopUp = "TopUp";
     public const string FreezeWallet = "FreezeWallet";
     public const string ViewAnyTransaction = "ViewAnyTransaction";
+    public const string BackOffice = "BackOffice";
+    public const string ViewAuditLog = "ViewAuditLog";
+    public const string ManageStaff = "ManageStaff";
 
     public static void Register(AuthorizationOptions options)
     {
@@ -18,5 +21,8 @@ public static class Policies
         options.AddPolicy(TopUp, policy => policy.RequireRole(RoleNames.Operator));
         options.AddPolicy(FreezeWallet, policy => policy.RequireRole(RoleNames.Operator, RoleNames.Admin));
         options.AddPolicy(ViewAnyTransaction, policy => policy.RequireRole(RoleNames.Operator, RoleNames.Admin));
+        options.AddPolicy(BackOffice, policy => policy.RequireRole(RoleNames.Operator, RoleNames.Admin));
+        options.AddPolicy(ViewAuditLog, policy => policy.RequireRole(RoleNames.Admin));
+        options.AddPolicy(ManageStaff, policy => policy.RequireRole(RoleNames.Admin));
     }
 }

@@ -9,6 +9,10 @@ public static class ErrorCodes
     public const string Forbidden = "FORBIDDEN";
     public const string AccountLocked = "ACCOUNT_LOCKED";
     public const string InvalidRefreshToken = "INVALID_REFRESH_TOKEN";
+    public const string AccountRestricted = "ACCOUNT_RESTRICTED";
+    public const string StaffNotFound = "STAFF_NOT_FOUND";
+    public const string StaffNotRestrictable = "STAFF_NOT_RESTRICTABLE";
+    public const string AccountAlreadyInState = "ACCOUNT_ALREADY_IN_STATE";
     public const string SessionNotFound = "SESSION_NOT_FOUND";
     public const string WalletNotFound = "WALLET_NOT_FOUND";
     public const string TransactionNotFound = "TRANSACTION_NOT_FOUND";

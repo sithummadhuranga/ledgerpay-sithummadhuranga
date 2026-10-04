@@ -17,4 +17,14 @@ public static class AuditActions
     public const string TransferFailed = "TransferFailed";
     public const string WalletFrozen = "WalletFrozen";
     public const string WalletUnfrozen = "WalletUnfrozen";
+    public const string UserViewed = "UserViewed";
+    public const string AccountRestricted = "AccountRestricted";
+    public const string AccountRestrictionLifted = "AccountRestrictionLifted";
+
+    // Every action above, so a screen can offer them and a filter can refuse any other. A test checks that none is missing.
+    public static readonly IReadOnlyList<string> All =
+    [
+        Register, LoginSucceeded, LoginFailed, AccountLocked, RefreshRotated, RefreshReuseDetected, RefreshGraceUsed, Logout,
+        SessionRevoked, TopUp, TopUpFailed, Transfer, TransferFailed, WalletFrozen, WalletUnfrozen, UserViewed, AccountRestricted, AccountRestrictionLifted
+    ];
 }

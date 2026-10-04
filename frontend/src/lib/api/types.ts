@@ -130,6 +130,74 @@ export interface WalletStatusReceipt {
   changedAt: string
 }
 
+export interface UserSummary {
+  walletNumber: string
+  fullName: string
+  email: string
+  phone: string
+  balance: number
+  walletStatus: WalletStatus
+  locked: boolean
+  createdAt: string
+}
+
+export interface StaffTransaction {
+  reference: string
+  type: TransactionType
+  status: TransactionStatus
+  amount: number
+  fee: number
+  failureCode: string | null
+  senderWalletNumber: string | null
+  senderName: string | null
+  receiverWalletNumber: string | null
+  receiverName: string | null
+  requestedReceiver: string | null
+  bankReference: string | null
+  note: string | null
+  createdAt: string
+}
+
+export interface UserDetail {
+  walletNumber: string
+  fullName: string
+  email: string
+  phone: string
+  balance: number
+  walletStatus: WalletStatus
+  statusReason: string | null
+  statusChangedAt: string | null
+  statusChangedBy: string | null
+  locked: boolean
+  lockedUntil: string | null
+  failedLoginCount: number
+  createdAt: string
+  recentTransactions: StaffTransaction[]
+}
+
+export interface AuditEntry {
+  createdAt: string
+  action: string
+  entityType: string
+  entityReference: string | null
+  actorName: string | null
+  actorEmail: string | null
+  ipAddress: string | null
+  correlationId: string | null
+  details: string | null
+}
+
+export interface StaffMember {
+  fullName: string
+  email: string
+  role: 'Operator' | 'Admin'
+  restricted: boolean
+  restrictedAt: string | null
+  restrictedReason: string | null
+  restrictedBy: string | null
+  createdAt: string
+}
+
 export interface TransactionDetail {
   reference: string
   type: TransactionType

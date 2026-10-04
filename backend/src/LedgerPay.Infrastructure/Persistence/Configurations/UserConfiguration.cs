@@ -22,9 +22,16 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.PasswordHash).HasMaxLength(256).IsUnicode(false);
         builder.Property(user => user.LockoutEnd).HasColumnType("datetime2");
         builder.Property(user => user.CreatedAt).HasColumnType("datetime2");
+        builder.Property(user => user.RestrictedAt).HasColumnType("datetime2");
+        builder.Property(user => user.RestrictedReason).HasMaxLength(250);
 
         builder.HasIndex(user => user.Email).IsUnique();
         builder.HasIndex(user => user.Phone).IsUnique();
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(user => user.RestrictedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(user => user.Wallet)
             .WithOne(wallet => wallet.User)

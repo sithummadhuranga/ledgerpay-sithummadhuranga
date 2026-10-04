@@ -33,6 +33,16 @@ describe('the sign-in screen', () => {
     expect(tokenStore.get()).toBeNull()
   })
 
+  it('tells a restricted account that an administrator restricted it, and signs nobody in', async () => {
+    mockApi({ 'POST /auth/login': problem(403, 'ACCOUNT_RESTRICTED') })
+    const { user } = renderApp('/login')
+
+    await fillAndSubmit(user, 'dilani.senanayake@example.com')
+
+    expect(await screen.findByText(/restricted by an administrator/)).toBeInTheDocument()
+    expect(tokenStore.get()).toBeNull()
+  })
+
   it('tells a locked account how long to wait', async () => {
     mockApi({ 'POST /auth/login': problem(423, 'ACCOUNT_LOCKED', { retryAfterSeconds: 900 }, { 'Retry-After': '900' }) })
     const { user } = renderApp('/login')

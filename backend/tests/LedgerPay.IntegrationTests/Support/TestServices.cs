@@ -1,6 +1,7 @@
 using LedgerPay.Application.Abstractions;
 using LedgerPay.Application.Admin;
 using LedgerPay.Application.Auth;
+using LedgerPay.Application.BackOffice;
 using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Application.TopUps;
@@ -26,6 +27,10 @@ internal static class TestServices
 
     public static SessionService Sessions(AppDbContext db, TimeProvider? clock = null, JwtOptions? jwt = null) =>
         new(db, new JwtTokenService(jwt ?? TestJwt.Options()), new RefreshTokenService(), clock ?? TimeProvider.System);
+
+    public static BackOfficeQueries BackOffice(AppDbContext db, TimeProvider? clock = null) => new(db, clock ?? TimeProvider.System);
+
+    public static StaffService Staff(AppDbContext db, TimeProvider? clock = null) => new(db, clock ?? TimeProvider.System);
 
     public static TransferService Transfers(AppDbContext db, TimeProvider? clock = null)
     {

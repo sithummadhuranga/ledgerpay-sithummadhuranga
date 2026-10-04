@@ -6,6 +6,227 @@
     "version": "v1"
   },
   "paths": {
+    "/api/v1/admin/audit-logs": {
+      "get": {
+        "tags": [
+          "AdminAudit"
+        ],
+        "summary": "The audit log, newest first, by action, by who acted and from and to (whole days in UTC, both included). Admins only.",
+        "parameters": [
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Actor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "To",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAuditItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/staff": {
+      "get": {
+        "tags": [
+          "AdminStaff"
+        ],
+        "summary": "The operator and admin accounts, with whether each is restricted. Admins only.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffMember"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/staff/restriction": {
+      "patch": {
+        "tags": [
+          "AdminStaff"
+        ],
+        "summary": "Restrict an operator account, or lift the restriction, with a reason. A restricted operator cannot sign in, their sessions end at once and their token stops working. Admins only.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/topups": {
       "post": {
         "tags": [
@@ -76,6 +297,261 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/transactions": {
+      "get": {
+        "tags": [
+          "AdminTransactions"
+        ],
+        "summary": "Every transaction, newest first, with type, status, wallet number and from and to (whole days in UTC, both included). Operators and admins only.",
+        "parameters": [
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TransactionType"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TransactionStatus"
+            }
+          },
+          {
+            "name": "WalletNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "To",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfStaffTransactionItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "AdminUsers"
+        ],
+        "summary": "Find customers by part of a name, an email, a mobile number or a wallet number, and by whether the wallet is frozen or the account locked. Operators and admins only.",
+        "parameters": [
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserStatusFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfUserSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{walletNumber}": {
+      "get": {
+        "tags": [
+          "AdminUsers"
+        ],
+        "summary": "One customer with the freeze reason and the latest transactions. Looking is written to the audit log. Operators and admins only.",
+        "parameters": [
+          {
+            "name": "walletNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -894,6 +1370,68 @@
   },
   "components": {
     "schemas": {
+      "AuditItem": {
+        "required": [
+          "createdAt",
+          "action",
+          "entityType",
+          "entityReference",
+          "actorName",
+          "actorEmail",
+          "ipAddress",
+          "correlationId",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "actorEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "correlationId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "HistoryItem": {
         "required": [
           "reference",
@@ -1043,6 +1581,56 @@
           }
         }
       },
+      "PagedResponseOfAuditItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "PagedResponseOfHistoryItem": {
         "required": [
           "items",
@@ -1057,6 +1645,106 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HistoryItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResponseOfStaffTransactionItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffTransactionItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResponseOfUserSummary": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSummary"
             }
           },
           "page": {
@@ -1248,6 +1936,174 @@
           },
           "current": {
             "type": "boolean"
+          }
+        }
+      },
+      "StaffMember": {
+        "required": [
+          "fullName",
+          "email",
+          "role",
+          "restricted",
+          "restrictedAt",
+          "restrictedReason",
+          "restrictedBy",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "restricted": {
+            "type": "boolean"
+          },
+          "restrictedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "restrictedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "restrictedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StaffRestrictionRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "restricted": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "StaffTransactionItem": {
+        "required": [
+          "reference",
+          "type",
+          "status",
+          "amount",
+          "fee",
+          "failureCode",
+          "senderWalletNumber",
+          "senderName",
+          "receiverWalletNumber",
+          "receiverName",
+          "requestedReceiver",
+          "bankReference",
+          "note",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "senderWalletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "senderName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "receiverWalletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "receiverName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedReceiver": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -1531,6 +2387,150 @@
           }
         }
       },
+      "UserDetail": {
+        "required": [
+          "walletNumber",
+          "fullName",
+          "email",
+          "phone",
+          "balance",
+          "walletStatus",
+          "statusReason",
+          "statusChangedAt",
+          "statusChangedBy",
+          "locked",
+          "lockedUntil",
+          "failedLoginCount",
+          "createdAt",
+          "recentTransactions"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "balance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "walletStatus": {
+            "$ref": "#/components/schemas/WalletStatus"
+          },
+          "statusReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusChangedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "statusChangedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "lockedUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failedLoginCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recentTransactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffTransactionItem"
+            }
+          }
+        }
+      },
+      "UserStatusFilter": {
+        "enum": [
+          "Active",
+          "Frozen",
+          "Locked",
+          null
+        ]
+      },
+      "UserSummary": {
+        "required": [
+          "walletNumber",
+          "fullName",
+          "email",
+          "phone",
+          "balance",
+          "walletStatus",
+          "locked",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "balance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "walletStatus": {
+            "$ref": "#/components/schemas/WalletStatus"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "WalletResponse": {
         "required": [
           "walletNumber",
@@ -1636,7 +2636,19 @@
   },
   "tags": [
     {
+      "name": "AdminAudit"
+    },
+    {
+      "name": "AdminStaff"
+    },
+    {
       "name": "AdminTopUps"
+    },
+    {
+      "name": "AdminTransactions"
+    },
+    {
+      "name": "AdminUsers"
     },
     {
       "name": "AdminWallets"

@@ -34,6 +34,9 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
 
         builder.HasIndex(transaction => transaction.Reference).IsUnique();
 
+        // The back office lists every transaction, newest first.
+        builder.HasIndex(transaction => transaction.CreatedAt).IsDescending();
+
         // A failed top-up may repeat a bank reference, so only completed top-ups must be unique.
         builder.HasIndex(transaction => transaction.BankReference)
             .IsUnique()

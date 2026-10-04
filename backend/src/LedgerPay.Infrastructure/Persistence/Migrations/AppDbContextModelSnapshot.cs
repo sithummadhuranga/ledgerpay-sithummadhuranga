@@ -71,6 +71,9 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("Action", "CreatedAt")
+                        .IsDescending(false, true);
+
                     b.ToTable("AuditLogs", (string)null);
                 });
 
@@ -382,6 +385,9 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[BankReference] IS NOT NULL AND [Status] = 'Completed'");
 
+                    b.HasIndex("CreatedAt")
+                        .IsDescending();
+
                     b.HasIndex("InitiatedByUserId");
 
                     b.HasIndex("Reference")
@@ -445,6 +451,16 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(12)");
 
+                    b.Property<DateTime?>("RestrictedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RestrictedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RestrictedReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -452,6 +468,8 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Phone")
                         .IsUnique();
+
+                    b.HasIndex("RestrictedByUserId");
 
                     b.ToTable("Users", null, t =>
                         {
@@ -621,6 +639,14 @@ namespace LedgerPay.Infrastructure.Persistence.Migrations
                     b.Navigation("ReceiverWallet");
 
                     b.Navigation("SenderWallet");
+                });
+
+            modelBuilder.Entity("LedgerPay.Domain.Entities.User", b =>
+                {
+                    b.HasOne("LedgerPay.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("RestrictedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("LedgerPay.Domain.Entities.UserRole", b =>

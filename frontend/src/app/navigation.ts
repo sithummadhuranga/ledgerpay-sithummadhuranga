@@ -1,9 +1,11 @@
-import { ArrowLeftRight, Landmark, ListOrdered, ReceiptText, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, Landmark, LayoutDashboard, ListOrdered, ReceiptText, ScrollText, UserRoundCog, Users, Wallet, type LucideIcon } from 'lucide-react'
 
 export interface NavItem {
   to: string
   label: string
   icon: LucideIcon
+  // The link is active only on exactly this address, because other addresses start with it.
+  end?: boolean
 }
 
 const customer: NavItem[] = [
@@ -12,13 +14,21 @@ const customer: NavItem[] = [
   { to: '/history', label: 'History', icon: ListOrdered },
 ]
 
-const operator: NavItem[] = [
-  { to: '/operator/top-up', label: 'Top up', icon: Landmark },
-  { to: '/backoffice/wallets', label: 'Wallets', icon: ShieldCheck },
+// What operators and admins both do: see what needs a look, find customers, read transactions.
+const backOffice: NavItem[] = [
+  { to: '/backoffice', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/backoffice/users', label: 'Customers', icon: Users },
   { to: '/backoffice/transactions', label: 'Transactions', icon: ReceiptText },
 ]
 
-const admin: NavItem[] = operator.filter((item) => item.to !== '/operator/top-up')
+// An operator also tops wallets up. An admin also reads the audit log and restricts operators.
+const operator: NavItem[] = [{ to: '/operator/top-up', label: 'Top up', icon: Landmark }, ...backOffice]
+
+const admin: NavItem[] = [
+  ...backOffice,
+  { to: '/backoffice/audit', label: 'Audit log', icon: ScrollText },
+  { to: '/backoffice/staff', label: 'Staff', icon: UserRoundCog },
+]
 
 // What each role can open. The server checks the role again on every call: this only decides what is shown.
 export function navigationFor(roles: string[]): NavItem[] {

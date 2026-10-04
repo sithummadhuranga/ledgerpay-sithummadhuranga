@@ -147,7 +147,12 @@ public sealed class SessionService(
 
             if (successor is { RevokedAt: null } && successor.ExpiresAt > now && now - presented.RevokedAt.Value <= SessionRules.ReuseGrace)
             {
-                var owner = await db.Users.SingleAsync(user => user.Id == presented.UserId, cancellationToken);
+                var owner = await db.LockUserAsync(presented.UserId, cancellationToken) ?? throw new InvalidOperationException("The user disappeared.");
+                if (owner.RestrictedAt is not null)
+                {
+                    return ServiceResult<Refreshed>.Fail(ErrorCodes.InvalidRefreshToken);
+                }
+
                 var response = await LoginResponseBuilder.BuildAsync(db, tokens, owner, now, cancellationToken);
 
                 // Left on record with the address, because this is also what a copy of a token used just in time looks like.
@@ -166,7 +171,16 @@ public sealed class SessionService(
     private async Task<ServiceResult<Refreshed>> RotateAsync(
         RefreshToken presented, DateTime now, RequestInfo info, CancellationToken cancellationToken)
     {
-        var user = await db.Users.SingleAsync(row => row.Id == presented.UserId, cancellationToken);
+        // The row is locked, so a refresh and a restriction of the same account take turns and see each other.
+        var user = await db.LockUserAsync(presented.UserId, cancellationToken) ?? throw new InvalidOperationException("The user disappeared.");
+
+        // The restriction already ended every session. This is for one that was started in the same moment.
+        if (user.RestrictedAt is not null)
+        {
+            presented.RevokedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+            return ServiceResult<Refreshed>.Fail(ErrorCodes.InvalidRefreshToken);
+        }
 
         var token = refreshTokens.NewToken();
         var next = NewRow(user.Id, presented.FamilyId, token, presented.SessionStartedAt, now, info);

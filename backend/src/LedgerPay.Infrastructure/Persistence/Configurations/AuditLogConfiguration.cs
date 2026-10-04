@@ -20,6 +20,9 @@ internal sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.HasIndex(log => log.CreatedAt);
 
+        // The audit screen filters by action and lists newest first.
+        builder.HasIndex(log => new { log.Action, log.CreatedAt }).IsDescending(false, true);
+
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(log => log.ActorUserId)

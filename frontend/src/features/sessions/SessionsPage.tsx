@@ -57,7 +57,7 @@ export function SessionsPage() {
       ) : null}
 
       {sessions.isPending ? (
-        <div aria-busy="true" aria-label="Loading your sessions" className="grid max-w-2xl gap-2">
+        <div role="status" aria-busy="true" aria-label="Loading your sessions" className="grid max-w-2xl gap-2">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>

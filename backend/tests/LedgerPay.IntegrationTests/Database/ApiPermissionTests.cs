@@ -79,7 +79,7 @@ public class ApiPermissionTests(SqlServerFixture sql)
             Assert.Equal(0, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "INSERT"));
         }
 
-        foreach (var table in new[] { "Users", "Wallets", "IdempotencyKeys" })
+        foreach (var table in new[] { "Wallets", "IdempotencyKeys" })
         {
             Assert.Equal(1, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "UPDATE"));
         }
@@ -87,6 +87,25 @@ public class ApiPermissionTests(SqlServerFixture sql)
         foreach (var table in new[] { "Roles", "UserRoles", "LedgerAccounts", "Transactions", "SystemSettings", "LedgerEntries", "AuditLogs" })
         {
             Assert.Equal(0, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "UPDATE"));
+        }
+    }
+
+    [Fact]
+    public async Task Api_login_can_change_only_the_sign_in_and_restriction_columns_of_a_user()
+    {
+        await using var owner = sql.NewContext();
+        await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
+
+        await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
+
+        foreach (var column in new[] { "FailedLoginCount", "LockoutEnd", "RestrictedAt", "RestrictedReason", "RestrictedByUserId" })
+        {
+            Assert.Equal(1, await HasColumnPermissionAsync(api, "dbo.Users", column, "UPDATE"));
+        }
+
+        foreach (var column in new[] { "Id", "Email", "Phone", "FullName", "PasswordHash", "CreatedAt" })
+        {
+            Assert.Equal(0, await HasColumnPermissionAsync(api, "dbo.Users", column, "UPDATE"));
         }
     }
 

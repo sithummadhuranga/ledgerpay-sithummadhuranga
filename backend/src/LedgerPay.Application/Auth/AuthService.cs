@@ -155,6 +155,14 @@ public sealed class AuthService(
         user.FailedLoginCount = 0;
         user.LockoutEnd = null;
 
+        // Said only to someone who knew the password, so a guesser learns nothing about the account.
+        if (user.RestrictedAt is not null)
+        {
+            Audit(AuditActions.LoginFailed, user.Id, "Account is restricted", info, now);
+            await db.SaveChangesAsync(cancellationToken);
+            return ServiceResult<SignedIn>.Fail(ErrorCodes.AccountRestricted);
+        }
+
         var response = await LoginResponseBuilder.BuildAsync(db, tokens, user, now, cancellationToken);
 
         // The session is saved with the sign-in, so there is never a sign-in the user could not come back to.

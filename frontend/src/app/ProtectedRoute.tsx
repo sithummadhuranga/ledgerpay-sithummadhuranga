@@ -14,7 +14,7 @@ export function ProtectedRoute({ roles }: { roles?: string[] }) {
   // the cookie is about to restore.
   if (restoring) {
     return (
-      <div aria-busy="true" aria-label="Opening your account" className="mx-auto grid max-w-3xl gap-3 px-4 py-10">
+      <div role="status" aria-busy="true" aria-label="Opening your account" className="mx-auto grid max-w-3xl gap-3 px-4 py-10">
         <Skeleton className="h-10 w-1/2" />
         <Skeleton className="h-32 w-full" />
       </div>

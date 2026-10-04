@@ -1,6 +1,8 @@
 using LedgerPay.Api.Authorization;
 using LedgerPay.Api.Errors;
+using LedgerPay.Application.Abstractions;
 using LedgerPay.Domain.Constants;
+using Microsoft.EntityFrameworkCore;
 using LedgerPay.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -41,6 +43,26 @@ public static class AuthenticationExtensions
 
                 options.Events = new JwtBearerEvents
                 {
+                    // A restricted operator must lose access at once, not when the token runs out. Staff are few, so the
+                    // account is read on each call. A customer token is not checked here.
+                    OnTokenValidated = async context =>
+                    {
+                        var principal = context.Principal;
+                        var isStaff = principal?.IsInRole(RoleNames.Operator) == true || principal?.IsInRole(RoleNames.Admin) == true;
+                        if (!isStaff || principal!.UserId() is not { } userId)
+                        {
+                            return;
+                        }
+
+                        var db = context.HttpContext.RequestServices.GetRequiredService<IAppDbContext>();
+                        var allowed = await db.Users.AsNoTracking()
+                            .AnyAsync(user => user.Id == userId && user.RestrictedAt == null, context.HttpContext.RequestAborted);
+                        if (!allowed)
+                        {
+                            context.Fail("The account is restricted.");
+                        }
+                    },
+
                     OnChallenge = async context =>
                     {
                         context.HandleResponse();
