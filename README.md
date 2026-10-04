@@ -203,7 +203,7 @@ Every error is an RFC 7807 Problem Details body with a stable `code` (for exampl
 ## 9. How to run the tests
 
 ```
-cd backend && dotnet test        # unit tests and integration tests, 1012 in all
+cd backend && dotnet test        # unit tests and integration tests, 1015 in all
 cd frontend && npm test          # Vitest, 244 tests
 ```
 
