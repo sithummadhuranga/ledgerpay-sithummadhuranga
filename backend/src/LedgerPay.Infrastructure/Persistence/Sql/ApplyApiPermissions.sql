@@ -20,11 +20,10 @@ EXEC(N'GRANT INSERT ON [dbo].[AuditLogs] TO ' + @quoted);
 EXEC(N'GRANT INSERT ON [dbo].[RefreshTokens] TO ' + @quoted);
 
 -- UPDATE only where the app changes existing rows: failed login counts, wallet balances and status, idempotency responses,
--- and, for refresh tokens, only the two columns that say a token was revoked or replaced.
+-- and, for refresh tokens, only the two columns that say a token was revoked and which token replaced it.
 EXEC(N'GRANT UPDATE ON [dbo].[Users] TO ' + @quoted);
 EXEC(N'GRANT UPDATE ON [dbo].[Wallets] TO ' + @quoted);
 EXEC(N'GRANT UPDATE ON [dbo].[IdempotencyKeys] TO ' + @quoted);
--- A refresh token row never changes after it is written except to say it was revoked and by which row replaced.
 EXEC(N'GRANT UPDATE ON [dbo].[RefreshTokens] ([RevokedAt], [ReplacedById]) TO ' + @quoted);
 
 EXEC(N'DENY UPDATE, DELETE ON [dbo].[LedgerEntries] TO ' + @quoted);
