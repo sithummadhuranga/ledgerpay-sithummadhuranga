@@ -9,6 +9,17 @@ namespace LedgerPay.Infrastructure;
 
 public static class DependencyInjection
 {
+    // Registered apart from AddInfrastructure because only the API signs tokens. The DbTool has no use for a key.
+    public static IServiceCollection AddJwtTokens(this IServiceCollection services, JwtOptions options)
+    {
+        options.EnsureValid();
+
+        services.AddSingleton(options);
+        services.AddSingleton<ITokenService, JwtTokenService>();
+
+        return services;
+    }
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
         // Retry on failure covers the short connection drops Azure SQL is known for.

@@ -1,5 +1,6 @@
 using FluentValidation;
 using LedgerPay.Application.Admin;
+using LedgerPay.Application.Auth;
 using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Application.TopUps;
@@ -15,10 +16,13 @@ public static class DependencyInjection
         services.AddScoped<LedgerSettingsProvider>();
         services.AddScoped<IdempotencyService>();
 
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITopUpService, TopUpService>();
         services.AddScoped<IWalletStatusService, WalletStatusService>();
 
+        services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
+        services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
         services.AddSingleton<IValidator<TransferRequest>, TransferRequestValidator>();
         services.AddSingleton<IValidator<TopUpRequest>, TopUpRequestValidator>();
         services.AddSingleton<IValidator<WalletStatusRequest>, WalletStatusRequestValidator>();

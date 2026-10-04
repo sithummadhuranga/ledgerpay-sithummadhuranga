@@ -52,6 +52,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         return rows.SingleOrDefault();
     }
 
+    public async Task<User?> LockUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        // Same as for a wallet: drop a copy the context already holds, then read the row under the lock.
+        foreach (var entry in ChangeTracker.Entries<User>().Where(entry => entry.Entity.Id == userId).ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+
+        var rows = await Users
+            .FromSql($"SELECT * FROM [Users] WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {userId}")
+            .ToListAsync(cancellationToken);
+
+        return rows.SingleOrDefault();
+    }
+
     public async Task LockResourceAsync(string resource, CancellationToken cancellationToken)
     {
         // sp_getapplock holds the lock until the transaction ends. A negative result means it was not granted.
