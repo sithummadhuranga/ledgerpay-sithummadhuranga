@@ -4,7 +4,9 @@ using LedgerPay.Application.Auth;
 using LedgerPay.Application.Idempotency;
 using LedgerPay.Application.Settings;
 using LedgerPay.Application.TopUps;
+using LedgerPay.Application.Transactions;
 using LedgerPay.Application.Transfers;
+using LedgerPay.Application.Wallets;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LedgerPay.Application;
@@ -20,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITopUpService, TopUpService>();
         services.AddScoped<IWalletStatusService, WalletStatusService>();
+        services.AddScoped<IWalletService, WalletService>();
+        services.AddScoped<ITransactionQueries, TransactionQueries>();
 
         services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
         services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
@@ -27,6 +31,8 @@ public static class DependencyInjection
         services.AddSingleton<IValidator<TransferRequest>, TransferRequestValidator>();
         services.AddSingleton<IValidator<TopUpRequest>, TopUpRequestValidator>();
         services.AddSingleton<IValidator<WalletStatusRequest>, WalletStatusRequestValidator>();
+        services.AddSingleton<IValidator<LookupQuery>, LookupQueryValidator>();
+        services.AddSingleton<IValidator<HistoryQuery>, HistoryQueryValidator>();
 
         return services;
     }

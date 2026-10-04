@@ -1,3 +1,4 @@
+using LedgerPay.Application.Transactions;
 using LedgerPay.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,10 @@ public interface IAppDbContext
     DbSet<IdempotencyKey> IdempotencyKeys { get; }
     DbSet<SystemSetting> SystemSettings { get; }
     DbSet<AuditLog> AuditLogs { get; }
+
+    // The wallet statement view for one wallet, joined to its transactions and counterparties, in no particular order.
+    // Cut it with Where after this call: a filter then runs after the view has worked out the running balance.
+    IQueryable<StatementRow> WalletStatement(Guid walletId);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
