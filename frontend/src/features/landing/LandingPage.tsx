@@ -17,7 +17,7 @@ const safeguards = [
   { title: 'Double entry', text: 'Each transaction posts debits and credits that add up to the same amount. Entries are never edited or deleted.' },
   { title: 'One send per confirm', text: 'Each send carries a key. If a connection drops and the request is sent again, the first result comes back and nothing is posted twice.' },
   { title: 'Frozen wallets', text: 'Staff can freeze a wallet and must give a reason. A frozen wallet cannot send or receive until it is unfrozen.' },
-  { title: 'Sign-in limits', text: 'Five wrong passwords lock the account for 15 minutes. A sign-in lasts 15 minutes before the token has to be renewed.' },
+  { title: 'Sign-in limits', text: 'Five wrong passwords lock the account for 15 minutes. The sign-in token expires after 15 minutes and you sign in again.' },
   { title: 'Names stay masked', text: 'People you send to see you as N*** P***, not your full name, and nobody sees your email or balance.' },
 ]
 

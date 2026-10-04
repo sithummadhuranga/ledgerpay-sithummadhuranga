@@ -20,7 +20,7 @@ import type { LookupResult, Quote, TransferReceipt, TransferRequest } from '@/li
 import { getQuote, lookupWallet } from '@/lib/api/wallets'
 import { describeError } from '@/lib/errors'
 import { formatMoney } from '@/lib/format'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { newIdempotencyKey, wasRefused } from '@/lib/idempotency'
 import { cn } from '@/lib/utils'
 import { sendSchema, type RecipientKind, type SendValues } from './schema'
 
@@ -93,8 +93,13 @@ export function SendMoneyPage() {
         queryClient.invalidateQueries({ queryKey: transactionKeys.all }),
       ])
     },
-    onError: (error, current) =>
-      setProblem(describeError(error, { amount: current.values.amount, fee: String(current.quote.fee) })),
+    onError: (error, current) => {
+      setProblem(describeError(error, { amount: current.values.amount, fee: String(current.quote.fee) }))
+      // A refused attempt is finished. Trying again after a top-up needs a key the server has not seen.
+      if (wasRefused(error)) {
+        setReview((now) => (now ? { ...now, key: newIdempotencyKey() } : now))
+      }
+    },
   })
 
   function startOver() {

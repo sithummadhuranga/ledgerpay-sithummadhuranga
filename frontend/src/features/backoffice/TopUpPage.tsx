@@ -14,7 +14,7 @@ import type { TopUpReceipt } from '@/lib/api/types'
 import { describeError } from '@/lib/errors'
 import { showFieldErrors } from '@/lib/forms'
 import { formatMoney } from '@/lib/format'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { newIdempotencyKey, wasRefused } from '@/lib/idempotency'
 import { amountField, noteField, walletNumberField } from '@/lib/validation'
 
 const schema = z.object({
@@ -31,8 +31,8 @@ export function TopUpPage() {
   const queryClient = useQueryClient()
   const [receipt, setReceipt] = useState<TopUpReceipt | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
-  // One key for one attempt. Sending the same details again, after a lost connection for example, reuses the key,
-  // so the credit is made once. Different details are a new attempt and get a new key.
+  // One key for one attempt. Sending the same details again after a lost connection reuses the key, so the credit
+  // is made once. Different details, or an attempt the server refused, are a new attempt and get a new key.
   const attempt = useRef<{ signature: string; key: string } | null>(null)
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: empty })
 
@@ -55,6 +55,10 @@ export function TopUpPage() {
       await queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
     onError: (error) => {
+      // A refused attempt is finished, so the next try gets a new key.
+      if (wasRefused(error)) {
+        attempt.current = null
+      }
       if (!showFieldErrors(form, error, ['walletNumber', 'amount', 'bankReference', 'note'])) {
         setProblem(describeError(error))
       }

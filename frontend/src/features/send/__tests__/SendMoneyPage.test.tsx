@@ -100,7 +100,7 @@ describe('sending money', () => {
     expect(keys[0]).toBe(keys[1])
   })
 
-  it('makes a new key when the details are changed', async () => {
+  it('makes a new key after Change details', async () => {
     const { user, calls } = await openAs(
       customerLogin,
       { ...replies, 'POST /transfers': () => problem(422, 'INSUFFICIENT_FUNDS') },
@@ -118,6 +118,32 @@ describe('sending money', () => {
     const keys = calls.filter((call) => call.key === 'POST /transfers').map((call) => call.headers['Idempotency-Key'])
     expect(keys).toHaveLength(2)
     expect(keys[0]).not.toBe(keys[1])
+  })
+
+  it('makes a new key after a refusal, so a second try after a top-up is not answered with the old refusal', async () => {
+    const { user, calls } = await openAs(customerLogin, { ...replies, 'POST /transfers': () => problem(422, 'INSUFFICIENT_FUNDS') }, '/send')
+    await fillDetails(user)
+    await user.click(await screen.findByRole('button', { name: /Confirm and send/ }))
+    await screen.findByText(/Your balance does not cover/)
+
+    await user.click(screen.getByRole('button', { name: /Confirm and send/ }))
+
+    await vi.waitFor(() => expect(calls.filter((call) => call.key === 'POST /transfers')).toHaveLength(2))
+    const [first, second] = calls.filter((call) => call.key === 'POST /transfers').map((call) => call.headers['Idempotency-Key'])
+    expect(second).not.toBe(first)
+  })
+
+  it('shows what the server says is wrong when it refuses the details', async () => {
+    const { user } = await openAs(
+      customerLogin,
+      { ...replies, 'POST /transfers': problem(400, 'VALIDATION_FAILED', { errors: { amount: ['Amount must be at least 10.00.'] } }) },
+      '/send',
+    )
+    await fillDetails(user)
+
+    await user.click(await screen.findByRole('button', { name: /Confirm and send/ }))
+
+    expect(await screen.findByText(/Amount must be at least 10\.00\./)).toBeInTheDocument()
   })
 
   it('says which amounts the balance does not cover and stays on the confirmation', async () => {

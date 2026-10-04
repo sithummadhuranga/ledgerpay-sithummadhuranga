@@ -10,6 +10,6 @@ export const amountField = z
   .string()
   .trim()
   .regex(/^[0-9]+(\.[0-9]{1,2})?$/, 'Enter an amount with at most 2 decimals, such as 5000 or 5000.50.')
-  .refine((amount) => Number(amount) > 0, 'The amount must be more than zero.')
+  .refine((amount) => /[1-9]/.test(amount), 'The amount must be more than zero.')
 
 export const noteField = z.string().max(140, 'A note can have at most 140 characters.')

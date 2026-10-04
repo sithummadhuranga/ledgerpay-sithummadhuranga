@@ -52,21 +52,53 @@ describe('the operator top-up', () => {
     expect(Object.keys(topUps(calls)[0]!.body as object)).not.toContain('note')
   })
 
-  it('reuses the key for the same details and makes a new one when any detail changes', async () => {
-    const { user, calls } = await openAs(operatorLogin, { 'POST /admin/topups': () => problem(409, 'DUPLICATE_BANK_REFERENCE') })
+  it('reuses the key after a lost connection, so the credit is made once', async () => {
+    let attempts = 0
+    const { user, calls } = await openAs(operatorLogin, {
+      'POST /admin/topups': () => {
+        if (++attempts === 1) {
+          throw new TypeError('Failed to fetch')
+        }
+        return json(201, receipt)
+      },
+    })
     await fill(user)
 
     await send(user)
-    await screen.findByText('That bank reference was already used for a top-up.')
-    await send(user)
-    await user.clear(screen.getByLabelText('Bank reference'))
-    await user.type(screen.getByLabelText('Bank reference'), 'bank99zz99')
+    await screen.findByText(/We could not reach the server/)
     await send(user)
 
-    await vi.waitFor(() => expect(topUps(calls)).toHaveLength(3))
-    const [first, again, changed] = topUps(calls).map((call) => call.headers['Idempotency-Key'])
+    await screen.findByRole('heading', { name: 'Wallet topped up' })
+    const [first, again] = topUps(calls).map((call) => call.headers['Idempotency-Key'])
     expect(again).toBe(first)
-    expect(changed).not.toBe(first)
+  })
+
+  it('makes a new key after the server refused the attempt, because it would replay the refusal', async () => {
+    const { user, calls } = await openAs(operatorLogin, { 'POST /admin/topups': () => problem(422, 'WALLET_FROZEN') })
+    await fill(user)
+
+    await send(user)
+    await screen.findByText('A frozen wallet cannot send or receive money.')
+    await send(user)
+
+    await vi.waitFor(() => expect(topUps(calls)).toHaveLength(2))
+    const [first, second] = topUps(calls).map((call) => call.headers['Idempotency-Key'])
+    expect(second).not.toBe(first)
+  })
+
+  it('makes a new key when any detail changes', async () => {
+    const { user, calls } = await openAs(operatorLogin, { 'POST /admin/topups': () => json(201, receipt) })
+    await fill(user)
+    await send(user)
+    await screen.findByRole('heading', { name: 'Wallet topped up' })
+    await user.click(screen.getByRole('button', { name: 'Top up another wallet' }))
+    await fill(user, { bank: 'bank99zz99' })
+
+    await send(user)
+
+    await vi.waitFor(() => expect(topUps(calls)).toHaveLength(2))
+    const [first, second] = topUps(calls).map((call) => call.headers['Idempotency-Key'])
+    expect(second).not.toBe(first)
   })
 
   it('cannot be fired twice while it is running', async () => {

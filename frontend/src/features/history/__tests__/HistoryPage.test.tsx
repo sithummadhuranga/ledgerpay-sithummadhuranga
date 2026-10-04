@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { HistoryItem } from '@/lib/api/types'
 import { customerLogin, json, openAs, problem } from '@/test/helpers'
@@ -148,5 +148,43 @@ describe('the history page', () => {
     await openAs(customerLogin, { [url('page=1&pageSize=10')]: () => never }, '/history')
 
     expect(await screen.findByLabelText('Loading your transactions')).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('says the date filter counts days in UTC', async () => {
+    await openAs(customerLogin, { [url('page=1&pageSize=10')]: pageOf([item(1)]) }, '/history')
+
+    expect(await screen.findByText(/counts whole days in UTC/)).toBeInTheDocument()
+  })
+
+  it('offers the last page when the address asks for one past the end', async () => {
+    const { user, router } = await openAs(
+      customerLogin,
+      {
+        [url('page=99&pageSize=10')]: pageOf([], 99, 25, 3),
+        [url('page=3&pageSize=10')]: pageOf([item(25)], 3, 25, 3),
+      },
+      '/history?page=99',
+    )
+
+    expect(await screen.findByText('That page does not exist.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Go to the last page' }))
+
+    expect(await screen.findByText('Page 3 of 3. 25 entries.')).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?page=3')
+  })
+
+  it('shows the dates of the address again when the user goes Back', async () => {
+    const { router } = await openAs(
+      customerLogin,
+      { [url('from=2026-10-01&page=1&pageSize=10')]: pageOf([item(1)]), [url('page=1&pageSize=10')]: pageOf([item(2)]) },
+      '/history?from=2026-10-01',
+    )
+    expect(await screen.findByLabelText('From')).toHaveValue('2026-10-01')
+
+    await act(async () => {
+      await router.navigate('/history')
+    })
+
+    expect(await screen.findByLabelText('From')).toHaveValue('')
   })
 })
