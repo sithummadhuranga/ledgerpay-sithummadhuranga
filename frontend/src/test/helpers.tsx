@@ -22,11 +22,18 @@ export const problem = (status: number, code: string, extra: Record<string, unkn
 // Answers the api calls of a test. A key is the method and the path after /api/v1, for example "GET /wallets/me".
 // Calling without a reply for a key fails the test, so a screen cannot make a call nobody expected.
 export function mockApi(replies: Record<string, Reply>) {
+  // Every page load asks whether the refresh cookie opens a session, and signing out tells the server. A test that is
+  // not about either gets the answers of a visitor with no cookie.
+  const answers: Record<string, Reply> = {
+    'POST /auth/refresh': () => problem(401, 'INVALID_REFRESH_TOKEN'),
+    'POST /auth/logout': () => new Response(null, { status: 204 }),
+    ...replies,
+  }
   const calls: { key: string; body: unknown; headers: Record<string, string> }[] = []
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${url.replace('/api/v1', '')}`
     calls.push({ key, body: init?.body ? JSON.parse(init.body as string) : undefined, headers: (init?.headers ?? {}) as Record<string, string> })
-    const reply = replies[key]
+    const reply = answers[key]
     if (!reply) {
       throw new Error(`No reply set for ${key}`)
     }
@@ -35,6 +42,9 @@ export function mockApi(replies: Record<string, Reply>) {
   vi.stubGlobal('fetch', fetchMock)
   return { calls, fetchMock }
 }
+
+// The calls a screen made on its own account: not the page-load question of whether the cookie opens a session.
+export const screenCalls = <T extends { key: string }>(calls: T[]) => calls.filter((call) => call.key !== 'POST /auth/refresh')
 
 export function renderApp(entry: string | { pathname: string; state?: unknown } = '/', routes: RouteObject[] = appRoutes) {
   tokenStore.clear()

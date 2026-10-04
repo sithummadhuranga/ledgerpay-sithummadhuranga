@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStore } from '@/lib/api/token'
-import { customerLogin, json, mockApi, problem, renderApp, signOut } from '@/test/helpers'
+import { customerLogin, json, mockApi, problem, renderApp, screenCalls, signOut } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -13,14 +13,14 @@ async function fillAndSubmit(user: ReturnType<typeof renderApp>['user'], email =
 
 describe('the sign-in screen', () => {
   it('asks for both fields before it calls the api', async () => {
-    const { fetchMock } = mockApi({})
+    const { calls } = mockApi({})
     const { user } = renderApp('/login')
 
     await user.click(await screen.findByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByText('Enter your email.')).toBeInTheDocument()
     expect(screen.getByText('Enter your password.')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screenCalls(calls)).toHaveLength(0)
   })
 
   it('says plainly that the email or password is wrong', async () => {
@@ -47,7 +47,7 @@ describe('the sign-in screen', () => {
     const pending = new Promise<Response>((resolve) => {
       finish = resolve
     })
-    const { fetchMock } = mockApi({ 'POST /auth/login': () => pending })
+    const { calls } = mockApi({ 'POST /auth/login': () => pending })
     const { user } = renderApp('/login')
 
     await user.type(await screen.findByLabelText('Email'), 'nimali.perera@example.com')
@@ -55,7 +55,7 @@ describe('the sign-in screen', () => {
     await user.dblClick(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(screen.getByRole('button', { name: 'Signing in' })).toBeDisabled()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screenCalls(calls)).toHaveLength(1)
     finish(problem(401, 'INVALID_CREDENTIALS'))
     await screen.findByText('The email or password is wrong.')
   })

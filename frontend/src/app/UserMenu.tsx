@@ -1,5 +1,5 @@
-import { LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { LogOut, MonitorSmartphone } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,7 @@ export function UserMenu() {
   }
 
   function leave() {
-    signOut()
+    void signOut()
     navigate('/login', { replace: true })
   }
 
@@ -52,6 +52,10 @@ export function UserMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link to="/sessions" />}>
+          <MonitorSmartphone aria-hidden />
+          Your sessions
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={leave}>
           <LogOut aria-hidden />
           Sign out

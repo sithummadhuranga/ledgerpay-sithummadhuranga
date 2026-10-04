@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
+import { SessionsPage } from '@/features/sessions/SessionsPage'
 import { TopUpPage } from '@/features/backoffice/TopUpPage'
 import { TransactionLookupPage } from '@/features/backoffice/TransactionLookupPage'
 import { WalletStatusPage } from '@/features/backoffice/WalletStatusPage'
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       {
         element: <AppShell />,
         children: [
+          { path: '/sessions', element: <SessionsPage /> },
           {
             element: <ProtectedRoute roles={['Customer']} />,
             children: [
