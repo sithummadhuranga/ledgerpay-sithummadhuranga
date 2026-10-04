@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IdempotencyService>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITopUpService, TopUpService>();
         services.AddScoped<IWalletStatusService, WalletStatusService>();

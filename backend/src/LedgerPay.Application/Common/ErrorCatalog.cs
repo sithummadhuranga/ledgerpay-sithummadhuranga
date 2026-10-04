@@ -14,6 +14,8 @@ public static class ErrorCatalog
         [ErrorCodes.InvalidCredentials] = new(401, "Email or password is wrong"),
         [ErrorCodes.Forbidden] = new(403, "You do not have access to this"),
         [ErrorCodes.AccountLocked] = new(423, "Account is locked after too many failed sign-ins"),
+        [ErrorCodes.InvalidRefreshToken] = new(401, "Your session ended"),
+        [ErrorCodes.SessionNotFound] = new(404, "Session not found"),
         [ErrorCodes.WalletNotFound] = new(404, "Wallet not found"),
         [ErrorCodes.TransactionNotFound] = new(404, "Transaction not found"),
         [ErrorCodes.RecipientNotFound] = new(404, "Recipient not found"),

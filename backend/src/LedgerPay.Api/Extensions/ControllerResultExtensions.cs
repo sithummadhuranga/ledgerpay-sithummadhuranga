@@ -45,5 +45,5 @@ public static class ControllerResultExtensions
     }
 
     public static RequestInfo ToRequestInfo(this HttpContext context) =>
-        new(context.Connection.RemoteIpAddress?.ToString(), context.TraceIdentifier);
+        new(context.Connection.RemoteIpAddress?.ToString(), context.TraceIdentifier, context.Request.Headers.UserAgent.ToString());
 }

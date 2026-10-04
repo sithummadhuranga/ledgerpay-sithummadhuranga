@@ -23,6 +23,7 @@ public class HealthCheckTimeoutTests
         public DbSet<IdempotencyKey> IdempotencyKeys => throw new NotSupportedException();
         public DbSet<SystemSetting> SystemSettings => throw new NotSupportedException();
         public DbSet<AuditLog> AuditLogs => throw new NotSupportedException();
+        public DbSet<RefreshToken> RefreshTokens => throw new NotSupportedException();
 
         public IQueryable<StatementRow> WalletStatement(Guid walletId) => throw new NotSupportedException();
 

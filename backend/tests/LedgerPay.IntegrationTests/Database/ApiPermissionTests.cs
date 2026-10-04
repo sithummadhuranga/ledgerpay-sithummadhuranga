@@ -69,7 +69,7 @@ public class ApiPermissionTests(SqlServerFixture sql)
 
         await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
 
-        foreach (var table in new[] { "Users", "UserRoles", "Wallets", "LedgerAccounts", "Transactions", "LedgerEntries", "IdempotencyKeys", "AuditLogs" })
+        foreach (var table in new[] { "Users", "UserRoles", "Wallets", "LedgerAccounts", "Transactions", "LedgerEntries", "IdempotencyKeys", "AuditLogs", "RefreshTokens" })
         {
             Assert.Equal(1, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "INSERT"));
         }
@@ -79,7 +79,7 @@ public class ApiPermissionTests(SqlServerFixture sql)
             Assert.Equal(0, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "INSERT"));
         }
 
-        foreach (var table in new[] { "Users", "Wallets", "IdempotencyKeys" })
+        foreach (var table in new[] { "Users", "Wallets", "IdempotencyKeys", "RefreshTokens" })
         {
             Assert.Equal(1, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "UPDATE"));
         }
@@ -88,6 +88,17 @@ public class ApiPermissionTests(SqlServerFixture sql)
         {
             Assert.Equal(0, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "UPDATE"));
         }
+    }
+
+    [Fact]
+    public async Task Api_login_cannot_delete_refresh_tokens_so_a_revoked_one_stays_on_record()
+    {
+        await using var owner = sql.NewContext();
+        await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
+
+        await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
+
+        Assert.Equal(0, await HasPermissionAsync(api, "dbo.RefreshTokens", "OBJECT", "DELETE"));
     }
 
     [Fact]

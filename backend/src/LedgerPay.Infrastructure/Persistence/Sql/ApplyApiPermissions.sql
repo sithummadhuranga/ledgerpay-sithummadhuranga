@@ -17,11 +17,14 @@ EXEC(N'GRANT INSERT ON [dbo].[Transactions] TO ' + @quoted);
 EXEC(N'GRANT INSERT ON [dbo].[LedgerEntries] TO ' + @quoted);
 EXEC(N'GRANT INSERT ON [dbo].[IdempotencyKeys] TO ' + @quoted);
 EXEC(N'GRANT INSERT ON [dbo].[AuditLogs] TO ' + @quoted);
+EXEC(N'GRANT INSERT ON [dbo].[RefreshTokens] TO ' + @quoted);
 
--- UPDATE only where the app changes existing rows: failed login counts, wallet balances and status, idempotency responses.
+-- UPDATE only where the app changes existing rows: failed login counts, wallet balances and status, idempotency responses,
+-- and the revoked and replaced columns of refresh tokens.
 EXEC(N'GRANT UPDATE ON [dbo].[Users] TO ' + @quoted);
 EXEC(N'GRANT UPDATE ON [dbo].[Wallets] TO ' + @quoted);
 EXEC(N'GRANT UPDATE ON [dbo].[IdempotencyKeys] TO ' + @quoted);
+EXEC(N'GRANT UPDATE ON [dbo].[RefreshTokens] TO ' + @quoted);
 
 EXEC(N'DENY UPDATE, DELETE ON [dbo].[LedgerEntries] TO ' + @quoted);
 EXEC(N'DENY UPDATE, DELETE ON [dbo].[AuditLogs] TO ' + @quoted);

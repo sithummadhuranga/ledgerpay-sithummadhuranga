@@ -32,7 +32,10 @@ public class AuthServiceTests(SqlServerFixture sql)
         return await TestServices.Auth(db, clock).RegisterAsync(request, Caller, CancellationToken.None);
     }
 
-    private async Task<ServiceResult<LoginResponse>> LoginAsync(string email, string password, TimeProvider? clock = null)
+    private async Task<ServiceResult<LoginResponse>> LoginAsync(string email, string password, TimeProvider? clock = null) =>
+        (await SignInAsync(email, password, clock)).Map(signedIn => signedIn.Response);
+
+    private async Task<ServiceResult<SignedIn>> SignInAsync(string email, string password, TimeProvider? clock = null)
     {
         await using var db = sql.NewContext();
         return await TestServices.Auth(db, clock).LoginAsync(new LoginRequest(email, password), Caller, CancellationToken.None);
