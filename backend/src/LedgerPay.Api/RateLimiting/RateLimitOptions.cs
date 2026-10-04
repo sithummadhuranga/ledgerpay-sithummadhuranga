@@ -16,6 +16,9 @@ public sealed class RateLimitOptions
     // Sign-in and register, counted for each address.
     public RateLimitRule Auth { get; set; } = new() { PermitLimit = 10, WindowSeconds = 60 };
 
+    // Refresh and sign out, counted for each address. Every page load refreshes, so the limit is looser than for sign-in.
+    public RateLimitRule Refresh { get; set; } = new() { PermitLimit = 30, WindowSeconds = 60 };
+
     // Wallet lookup, counted for each customer. A lookup can be used to scan for wallets.
     public RateLimitRule Lookup { get; set; } = new() { PermitLimit = 30, WindowSeconds = 60 };
 
@@ -26,6 +29,7 @@ public sealed class RateLimitOptions
     public void EnsureValid()
     {
         Check(nameof(Auth), Auth);
+        Check(nameof(Refresh), Refresh);
         Check(nameof(Lookup), Lookup);
         Check(nameof(Money), Money);
     }

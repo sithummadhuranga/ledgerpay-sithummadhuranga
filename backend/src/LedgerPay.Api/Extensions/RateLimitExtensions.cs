@@ -24,6 +24,7 @@ public static class RateLimitExtensions
             };
 
             limiter.AddPolicy(RateLimitPolicies.Auth, http => Window(AddressOf(http), options.Auth));
+            limiter.AddPolicy(RateLimitPolicies.Refresh, http => Window(AddressOf(http), options.Refresh));
             limiter.AddPolicy(RateLimitPolicies.Lookup, http => Window(UserOrAddress(http), options.Lookup));
             limiter.AddPolicy(RateLimitPolicies.Money, http => Window(UserOrAddress(http), options.Money));
         });

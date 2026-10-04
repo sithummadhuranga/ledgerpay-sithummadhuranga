@@ -16,6 +16,7 @@ public static class DependencyInjection
 
         services.AddSingleton(options);
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 
         return services;
     }

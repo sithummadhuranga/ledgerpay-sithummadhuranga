@@ -14,6 +14,8 @@ public class ErrorCatalogTests
         (ErrorCodes.InvalidCredentials, 401),
         (ErrorCodes.Forbidden, 403),
         (ErrorCodes.AccountLocked, 423),
+        (ErrorCodes.InvalidRefreshToken, 401),
+        (ErrorCodes.SessionNotFound, 404),
         (ErrorCodes.WalletNotFound, 404),
         (ErrorCodes.TransactionNotFound, 404),
         (ErrorCodes.RecipientNotFound, 404),

@@ -2,6 +2,7 @@ using LedgerPay.Api.Errors;
 using LedgerPay.Api.Extensions;
 using LedgerPay.Api.Handlers;
 using LedgerPay.Api.Middleware;
+using LedgerPay.Api.Sessions;
 using LedgerPay.Application;
 using LedgerPay.Infrastructure;
 using LedgerPay.Infrastructure.Security;
@@ -17,10 +18,13 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+var cookieOptions = builder.Configuration.GetSection(RefreshCookieOptions.SectionName).Get<RefreshCookieOptions>() ?? new RefreshCookieOptions();
 
 builder.Services
     .AddInfrastructure(connectionString)
     .AddJwtTokens(jwt)
+    .AddSingleton(cookieOptions)
+    .AddSingleton<RefreshCookie>()
     .AddApplication()
     .AddJwtAuthentication(jwt)
     .AddFrontendCors(builder.Configuration)

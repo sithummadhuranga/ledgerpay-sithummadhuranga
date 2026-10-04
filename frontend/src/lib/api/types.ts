@@ -19,6 +19,15 @@ export interface LoginResponse {
   walletNumber: string | null
 }
 
+export interface SessionInfo {
+  id: string
+  signedInAt: string
+  lastActiveAt: string
+  ipAddress: string | null
+  userAgent: string | null
+  current: boolean
+}
+
 export interface RegisterRequest {
   fullName: string
   email: string

@@ -8,6 +8,8 @@ public static class ErrorCodes
     public const string InvalidCredentials = "INVALID_CREDENTIALS";
     public const string Forbidden = "FORBIDDEN";
     public const string AccountLocked = "ACCOUNT_LOCKED";
+    public const string InvalidRefreshToken = "INVALID_REFRESH_TOKEN";
+    public const string SessionNotFound = "SESSION_NOT_FOUND";
     public const string WalletNotFound = "WALLET_NOT_FOUND";
     public const string TransactionNotFound = "TRANSACTION_NOT_FOUND";
     public const string RecipientNotFound = "RECIPIENT_NOT_FOUND";

@@ -17,8 +17,15 @@ internal static class TestServices
 
     public static string NewBankReference() => "BANK" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
 
-    public static AuthService Auth(AppDbContext db, TimeProvider? clock = null, JwtOptions? jwt = null, IPasswordService? passwords = null) =>
-        new(db, passwords ?? new PasswordService(), new JwtTokenService(jwt ?? TestJwt.Options()), clock ?? TimeProvider.System);
+    public static AuthService Auth(AppDbContext db, TimeProvider? clock = null, JwtOptions? jwt = null, IPasswordService? passwords = null)
+    {
+        clock ??= TimeProvider.System;
+        var tokens = new JwtTokenService(jwt ?? TestJwt.Options());
+        return new AuthService(db, passwords ?? new PasswordService(), tokens, Sessions(db, clock, jwt), clock);
+    }
+
+    public static SessionService Sessions(AppDbContext db, TimeProvider? clock = null, JwtOptions? jwt = null) =>
+        new(db, new JwtTokenService(jwt ?? TestJwt.Options()), new RefreshTokenService(), clock ?? TimeProvider.System);
 
     public static TransferService Transfers(AppDbContext db, TimeProvider? clock = null)
     {

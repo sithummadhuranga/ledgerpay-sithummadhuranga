@@ -8,10 +8,12 @@ export interface SessionUser {
 
 export interface AuthState {
   user: SessionUser | null
+  // True until the first answer to "is there a session in this browser?". A protected page waits for it.
+  restoring: boolean
   // Why the last session ended, shown once on the sign-in screen.
   notice: string | null
   signIn: (email: string, password: string) => Promise<SessionUser>
-  signOut: () => void
+  signOut: () => Promise<void>
   clearNotice: () => void
 }
 

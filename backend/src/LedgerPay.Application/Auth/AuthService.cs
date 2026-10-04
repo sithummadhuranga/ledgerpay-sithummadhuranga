@@ -11,6 +11,7 @@ public sealed class AuthService(
     IAppDbContext db,
     IPasswordService passwords,
     ITokenService tokens,
+    ISessionService sessions,
     TimeProvider clock) : IAuthService
 {
     // The wallet number is random. Two registrations can pick the same one, and the unique index then
@@ -50,7 +51,7 @@ public sealed class AuthService(
         throw new InvalidOperationException("Could not find a free wallet number.");
     }
 
-    public async Task<ServiceResult<LoginResponse>> LoginAsync(
+    public async Task<ServiceResult<SignedIn>> LoginAsync(
         LoginRequest request, RequestInfo info, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
@@ -122,7 +123,7 @@ public sealed class AuthService(
         return null;
     }
 
-    private async Task<ServiceResult<LoginResponse>> SignInAsync(
+    private async Task<ServiceResult<SignedIn>> SignInAsync(
         Guid userId, string password, RequestInfo info, CancellationToken cancellationToken)
     {
         // The row is locked, so parallel guesses for one account take turns and each one sees the count before it.
@@ -143,7 +144,7 @@ public sealed class AuthService(
             Audit(AuditActions.LoginFailed, user.Id, "Account is locked", info, now);
             await db.SaveChangesAsync(cancellationToken);
             var secondsLeft = (int)Math.Ceiling((user.LockoutEnd.Value - now).TotalSeconds);
-            return ServiceResult<LoginResponse>.FailAndWait(ErrorCodes.AccountLocked, secondsLeft);
+            return ServiceResult<SignedIn>.FailAndWait(ErrorCodes.AccountLocked, secondsLeft);
         }
 
         if (!passwords.Verify(user.PasswordHash, password))
@@ -154,24 +155,17 @@ public sealed class AuthService(
         user.FailedLoginCount = 0;
         user.LockoutEnd = null;
 
-        var roles = await db.UserRoles.AsNoTracking()
-            .Where(userRole => userRole.UserId == user.Id)
-            .Select(userRole => userRole.Role.Name)
-            .ToListAsync(cancellationToken);
-        var walletNumber = await db.Wallets.AsNoTracking()
-            .Where(wallet => wallet.UserId == user.Id)
-            .Select(wallet => wallet.WalletNumber)
-            .SingleOrDefaultAsync(cancellationToken);
+        var response = await LoginResponseBuilder.BuildAsync(db, tokens, user, now, cancellationToken);
 
-        var accessToken = tokens.Create(user.Id, roles, now);
+        // The session is saved with the sign-in, so there is never a sign-in the user could not come back to.
+        var refresh = sessions.Start(user.Id, now, info);
         Audit(AuditActions.LoginSucceeded, user.Id, null, info, now);
         await db.SaveChangesAsync(cancellationToken);
 
-        return ServiceResult<LoginResponse>.Ok(new LoginResponse(
-            accessToken.Token, "Bearer", accessToken.ExpiresAt, user.FullName, roles, walletNumber));
+        return ServiceResult<SignedIn>.Ok(new SignedIn(response, refresh));
     }
 
-    private async Task<ServiceResult<LoginResponse>> RecordWrongPasswordAsync(
+    private async Task<ServiceResult<SignedIn>> RecordWrongPasswordAsync(
         User user, RequestInfo info, DateTime now, CancellationToken cancellationToken)
     {
         user.FailedLoginCount++;
@@ -181,20 +175,20 @@ public sealed class AuthService(
             user.LockoutEnd = now + LoginLockout.Duration;
             Audit(AuditActions.AccountLocked, user.Id, null, info, now);
             await db.SaveChangesAsync(cancellationToken);
-            return ServiceResult<LoginResponse>.FailAndWait(ErrorCodes.AccountLocked, (int)LoginLockout.Duration.TotalSeconds);
+            return ServiceResult<SignedIn>.FailAndWait(ErrorCodes.AccountLocked, (int)LoginLockout.Duration.TotalSeconds);
         }
 
         Audit(AuditActions.LoginFailed, user.Id, null, info, now);
         await db.SaveChangesAsync(cancellationToken);
-        return ServiceResult<LoginResponse>.Fail(ErrorCodes.InvalidCredentials);
+        return ServiceResult<SignedIn>.Fail(ErrorCodes.InvalidCredentials);
     }
 
-    private async Task<ServiceResult<LoginResponse>> RecordUnknownAccountAsync(RequestInfo info, CancellationToken cancellationToken)
+    private async Task<ServiceResult<SignedIn>> RecordUnknownAccountAsync(RequestInfo info, CancellationToken cancellationToken)
     {
         // No email in the entry: it is personal data and belongs to nobody we know.
         Audit(AuditActions.LoginFailed, null, "Unknown account", info, clock.GetUtcNow().UtcDateTime);
         await db.SaveChangesAsync(cancellationToken);
-        return ServiceResult<LoginResponse>.Fail(ErrorCodes.InvalidCredentials);
+        return ServiceResult<SignedIn>.Fail(ErrorCodes.InvalidCredentials);
     }
 
     private void Audit(string action, Guid? userId, string? details, RequestInfo info, DateTime now) =>

@@ -16,6 +16,7 @@ public interface IAppDbContext
     DbSet<IdempotencyKey> IdempotencyKeys { get; }
     DbSet<SystemSetting> SystemSettings { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
 
     // The history of one wallet: its lines from the wallet statement view joined to their transactions and counterparties,
     // plus the transfers its holder sent and had refused. In no particular order.

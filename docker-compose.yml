@@ -64,6 +64,9 @@ services:
       # The web container is the way in, so the client address is the one it forwards. Port 5100 below is a local
       # door for Swagger and curl: anyone on this machine who uses it can send any address in X-Forwarded-For.
       ForwardedHeaders__Enabled: "true"
+      # This stack is served over plain http on localhost, and a browser would not keep a Secure cookie there.
+      # Leave the setting at its default (true) wherever the site is served over https.
+      Sessions__CookieSecure: "false"
     ports:
       - "127.0.0.1:5100:8080"
     healthcheck:

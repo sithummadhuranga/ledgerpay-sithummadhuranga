@@ -69,7 +69,7 @@ public class ApiPermissionTests(SqlServerFixture sql)
 
         await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
 
-        foreach (var table in new[] { "Users", "UserRoles", "Wallets", "LedgerAccounts", "Transactions", "LedgerEntries", "IdempotencyKeys", "AuditLogs" })
+        foreach (var table in new[] { "Users", "UserRoles", "Wallets", "LedgerAccounts", "Transactions", "LedgerEntries", "IdempotencyKeys", "AuditLogs", "RefreshTokens" })
         {
             Assert.Equal(1, await HasPermissionAsync(api, "dbo." + table, "OBJECT", "INSERT"));
         }
@@ -91,12 +91,51 @@ public class ApiPermissionTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task Api_login_can_change_only_the_two_revoke_columns_of_a_refresh_token()
+    {
+        await using var owner = sql.NewContext();
+        await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
+
+        await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
+
+        foreach (var column in new[] { "RevokedAt", "ReplacedById" })
+        {
+            Assert.Equal(1, await HasColumnPermissionAsync(api, "dbo.RefreshTokens", column, "UPDATE"));
+        }
+
+        foreach (var column in new[] { "Id", "UserId", "FamilyId", "TokenHash", "CreatedAt", "SessionStartedAt", "ExpiresAt", "IpAddress", "UserAgent" })
+        {
+            Assert.Equal(0, await HasColumnPermissionAsync(api, "dbo.RefreshTokens", column, "UPDATE"));
+        }
+    }
+
+    [Fact]
+    public async Task Api_login_cannot_delete_refresh_tokens_so_a_revoked_one_stays_on_record()
+    {
+        await using var owner = sql.NewContext();
+        await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
+
+        await using var api = SqlServerFixture.NewContext(sql.ApiConnectionString);
+
+        Assert.Equal(0, await HasPermissionAsync(api, "dbo.RefreshTokens", "OBJECT", "DELETE"));
+    }
+
+    [Fact]
     public async Task Applying_permissions_twice_does_not_fail()
     {
         await using var owner = sql.NewContext();
 
         await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
         await DatabasePermissions.ApplyAsync(owner, sql.ApiLoginName, CancellationToken.None);
+    }
+
+    private static async Task<int> HasColumnPermissionAsync(
+        Infrastructure.Persistence.AppDbContext db, string table, string column, string permission)
+    {
+        var result = await db.Database
+            .SqlQuery<int?>($"SELECT HAS_PERMS_BY_NAME({table}, 'OBJECT', {permission}, {column}, 'COLUMN') AS [Value]")
+            .ToListAsync(TestContext.Current.CancellationToken);
+        return result.Single() ?? 0;
     }
 
     private static async Task<int> HasPermissionAsync(

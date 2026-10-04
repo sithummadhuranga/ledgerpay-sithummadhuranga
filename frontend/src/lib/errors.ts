@@ -20,6 +20,8 @@ const messages: Record<string, Describe> = {
   },
   IDEMPOTENCY_KEY_REQUIRED: () => 'We could not send this request. Try again.',
   UNAUTHENTICATED: () => 'Your session ended. Sign in again.',
+  INVALID_REFRESH_TOKEN: () => 'Your session ended. Sign in again.',
+  SESSION_NOT_FOUND: () => 'That session is already signed out.',
   INVALID_CREDENTIALS: () => 'The email or password is wrong.',
   FORBIDDEN: () => 'You do not have access to this.',
   ACCOUNT_LOCKED: (error) =>

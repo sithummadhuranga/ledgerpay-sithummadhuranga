@@ -1,12 +1,12 @@
 import { act, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { customerLogin, emptyPage, json, mockApi, renderApp, signIn, wallet } from '@/test/helpers'
+import { customerLogin, emptyPage, json, mockApi, renderApp, screenCalls, signIn, wallet } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
 describe('the landing page', () => {
   it('says what the product is and offers to create an account or sign in', async () => {
-    const { fetchMock } = mockApi({})
+    const { calls } = mockApi({})
 
     renderApp('/')
 
@@ -14,7 +14,7 @@ describe('the landing page', () => {
     expect(screen.getAllByRole('link', { name: /create an account/i }).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByRole('link', { name: 'Sign in' }).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/mobile number that starts with \+947/)).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screenCalls(calls)).toHaveLength(0)
   })
 
   it('shows the confirm screen of a send and marks it as an example, because the names and numbers are not a real account', () => {

@@ -12,6 +12,10 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
     [
         "post /api/v1/auth/register",
         "post /api/v1/auth/login",
+        "post /api/v1/auth/refresh",
+        "post /api/v1/auth/logout",
+        "get /api/v1/auth/sessions",
+        "delete /api/v1/auth/sessions/{id}",
         "get /api/v1/wallets/me",
         "get /api/v1/wallets/lookup",
         "get /api/v1/wallets/me/transactions",
@@ -83,7 +87,7 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
         Assert.Equal("http", scheme.GetProperty("type").GetString());
         Assert.Equal("bearer", scheme.GetProperty("scheme").GetString());
         Assert.Equal("JWT", scheme.GetProperty("bearerFormat").GetString());
-        string[] open = ["post /api/v1/auth/register", "post /api/v1/auth/login", "get /api/v1/health"];
+        string[] open = ["post /api/v1/auth/register", "post /api/v1/auth/login", "post /api/v1/auth/refresh", "post /api/v1/auth/logout", "get /api/v1/health"];
         foreach (var key in Operations)
         {
             var hasSecurity = Operation(document, key).TryGetProperty("security", out var security) && security.GetArrayLength() > 0;
@@ -115,7 +119,8 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
 
         string[] limited =
         [
-            "post /api/v1/auth/register", "post /api/v1/auth/login", "get /api/v1/wallets/lookup",
+            "post /api/v1/auth/register", "post /api/v1/auth/login", "post /api/v1/auth/refresh", "post /api/v1/auth/logout",
+            "get /api/v1/auth/sessions", "delete /api/v1/auth/sessions/{id}", "get /api/v1/wallets/lookup",
             "get /api/v1/transfers/quote", "post /api/v1/transfers", "post /api/v1/admin/topups"
         ];
         foreach (var key in Operations)

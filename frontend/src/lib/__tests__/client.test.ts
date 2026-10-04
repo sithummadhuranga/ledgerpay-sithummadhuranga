@@ -127,6 +127,122 @@ describe('the api client', () => {
   it('answers undefined for a 204', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
 
-    await expect(api.post('/auth/logout', {})).resolves.toBeUndefined()
+    await expect(api.post('/auth/logout')).resolves.toBeUndefined()
+  })
+
+  describe('when the access token has run out', () => {
+    const renewed = (token: string) => respond(200, { accessToken: token, tokenType: 'Bearer', expiresAt: 'x', fullName: 'N', roles: ['Customer'], walletNumber: '1' })
+    const headersOf = (call: unknown[]) => (call[1] as RequestInit).headers as Record<string, string>
+    const urlOf = (call: unknown[]) => call[0] as string
+
+    it('renews it through the cookie and repeats the call once with the new token and the same key', async () => {
+      tokenStore.set('old-token')
+      fetchMock
+        .mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' }))
+        .mockResolvedValueOnce(renewed('new-token'))
+        .mockResolvedValueOnce(respond(201, { ok: true }))
+
+      const result = await api.post('/transfers', { amount: '100.00' }, { idempotencyKey: 'key-1' })
+
+      expect(result).toEqual({ ok: true })
+      const calls = fetchMock.mock.calls
+      expect(calls.map(urlOf)).toEqual(['/api/v1/transfers', '/api/v1/auth/refresh', '/api/v1/transfers'])
+      expect(headersOf(calls[2]!).Authorization).toBe('Bearer new-token')
+      expect(headersOf(calls[2]!)['Idempotency-Key']).toBe('key-1')
+      expect(tokenStore.get()).toBe('new-token')
+    })
+
+    it('asks for the renewal without the expired token', async () => {
+      tokenStore.set('old-token')
+      fetchMock
+        .mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' }))
+        .mockResolvedValueOnce(renewed('new-token'))
+        .mockResolvedValueOnce(respond(200, {}))
+
+      await api.get('/wallets/me')
+
+      const refresh = fetchMock.mock.calls[1]!
+      expect((refresh[1] as RequestInit).method).toBe('POST')
+      expect(headersOf(refresh).Authorization).toBeUndefined()
+    })
+
+    it('renews once for calls that fail together', async () => {
+      tokenStore.set('old-token')
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/auth/refresh')) {
+          return renewed('new-token')
+        }
+        const sent = (init?.headers as Record<string, string> | undefined)?.Authorization
+        return sent === 'Bearer new-token' ? respond(200, { ok: true }) : respond(401, { code: 'UNAUTHENTICATED' })
+      })
+
+      await Promise.all([api.get('/wallets/me'), api.get('/wallets/me/transactions'), api.get('/transfers/quote')])
+
+      expect(fetchMock.mock.calls.filter((call) => urlOf(call).endsWith('/auth/refresh'))).toHaveLength(1)
+    })
+
+    it('ends the session when the cookie no longer works', async () => {
+      const ended = vi.fn()
+      tokenStore.whenSessionEnds(ended)
+      tokenStore.set('old-token')
+      fetchMock
+        .mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' }))
+        .mockResolvedValueOnce(respond(401, { code: 'INVALID_REFRESH_TOKEN' }))
+
+      const error = (await api.get('/wallets/me').catch((caught: unknown) => caught)) as ApiError
+
+      expect(error.code).toBe('UNAUTHENTICATED')
+      expect(ended).toHaveBeenCalledOnce()
+      expect(tokenStore.get()).toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps the session and reports a network error when the renewal cannot be reached', async () => {
+      const ended = vi.fn()
+      tokenStore.whenSessionEnds(ended)
+      tokenStore.set('old-token')
+      fetchMock.mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' })).mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+      const error = (await api.get('/wallets/me').catch((caught: unknown) => caught)) as ApiError
+
+      expect(error.code).toBe('NETWORK_ERROR')
+      expect(ended).not.toHaveBeenCalled()
+      expect(tokenStore.get()).toBe('old-token')
+    })
+
+    it('keeps the session when the renewal is refused for a busy server', async () => {
+      const ended = vi.fn()
+      tokenStore.whenSessionEnds(ended)
+      tokenStore.set('old-token')
+      fetchMock.mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' })).mockResolvedValueOnce(respond(429, { code: 'RATE_LIMITED' }))
+
+      await api.get('/wallets/me').catch(() => undefined)
+
+      expect(ended).not.toHaveBeenCalled()
+      expect(tokenStore.get()).toBe('old-token')
+    })
+
+    it('repeats a call only once, and ends the session when the new token is refused too', async () => {
+      const ended = vi.fn()
+      tokenStore.whenSessionEnds(ended)
+      tokenStore.set('old-token')
+      fetchMock
+        .mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' }))
+        .mockResolvedValueOnce(renewed('new-token'))
+        .mockResolvedValueOnce(respond(401, { code: 'UNAUTHENTICATED' }))
+
+      await api.get('/wallets/me').catch(() => undefined)
+
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+      expect(ended).toHaveBeenCalledOnce()
+    })
+
+    it('does not try to renew for a wrong password', async () => {
+      fetchMock.mockResolvedValue(respond(401, { code: 'INVALID_CREDENTIALS' }))
+
+      await api.post('/auth/login', {}).catch(() => undefined)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
   })
 })

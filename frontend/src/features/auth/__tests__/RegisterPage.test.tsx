@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { json, mockApi, problem, renderApp } from '@/test/helpers'
+import { json, mockApi, problem, renderApp, screenCalls } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -37,14 +37,14 @@ describe('the register screen', () => {
   })
 
   it('refuses a mobile number in the wrong format without calling the api', async () => {
-    const { fetchMock } = mockApi({})
+    const { calls } = mockApi({})
     const { user } = renderApp('/register')
 
     await fill(user, { phone: '0771284635' })
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(await screen.findByText('Enter a mobile number like +94771284635.')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screenCalls(calls)).toHaveLength(0)
   })
 
   it('puts a taken-email message from the server under the email field', async () => {
@@ -69,11 +69,11 @@ describe('the register screen', () => {
     expect(await screen.findByText('Your account is ready. Sign in to continue.')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/login')
     expect(screen.getByLabelText('Email')).toHaveValue('nimali.perera@example.com')
-    expect(calls[0]?.body).toEqual({ fullName: 'Nimali Perera', email: 'nimali.perera@example.com', phone: '+94771284635', password: 'Kandy-Lake-2026!' })
+    expect(screenCalls(calls)[0]?.body).toEqual({ fullName: 'Nimali Perera', email: 'nimali.perera@example.com', phone: '+94771284635', password: 'Kandy-Lake-2026!' })
   })
 
   it('asks for the password twice and says when the two are not the same', async () => {
-    const { fetchMock } = mockApi({})
+    const { calls } = mockApi({})
     const { user } = renderApp('/register')
 
     await fill(user)
@@ -82,7 +82,7 @@ describe('the register screen', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(await screen.findByText('The two passwords are not the same.')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screenCalls(calls)).toHaveLength(0)
   })
 
   it('does not send the repeated password to the api', async () => {
@@ -95,7 +95,7 @@ describe('the register screen', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     await screen.findByText('Your account is ready. Sign in to continue.')
-    expect(Object.keys(calls[0]!.body as object)).not.toContain('confirmPassword')
+    expect(Object.keys(screenCalls(calls)[0]!.body as object)).not.toContain('confirmPassword')
   })
 
   it('lets the user see each password they typed', async () => {
