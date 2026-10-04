@@ -1,8 +1,8 @@
 name: deploy
 
-# Every push to main builds the api image and puts it in the GitHub container registry. The step that deploys it to
-# Azure only runs when the repository variable AZURE_DEPLOY is true, so a push is never red because Azure is not set
-# up. Nothing is published or deployed from any other branch, even when the run is started by hand.
+# Every push to main builds the api image and puts it in the GitHub container registry. Deploying to Azure is a button:
+# Actions, deploy, Run workflow, on main. The run then waits for a reviewer of the production environment to approve,
+# so nothing reaches Azure by accident. Nothing is published or deployed from any other branch.
 on:
   push:
     branches: [main]
@@ -49,8 +49,11 @@ jobs:
 
   azure:
     needs: image
-    if: ${{ vars.AZURE_DEPLOY == 'true' && github.ref_name == 'main' }}
+    # Only a run started by hand deploys. A push to main stops after the image, and so is never held waiting.
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
+    # The environment holds the publish profile and the approval rule, and may be used from main only.
+    environment: production
     permissions:
       contents: read
     steps:
