@@ -2,6 +2,8 @@
 
 A small digital wallet for Sri Lankan rupees. Customers top up, send money to each other and read their history, and every move is posted to a double-entry ledger that always balances.
 
+**In a hurry:** the hosted copy is at https://ledgerpay.sithum.dev (the logins are in the submission email). To run it yourself, copy `.env.example` to `.env`, fill it in (section 4) and run `docker compose up -d --build --wait`, then open http://localhost:8080. Swagger is at `/swagger` and the data model is in [docs/erd.png](docs/erd.png).
+
 ## 1. Summary
 
 LedgerPay is a .NET 10 API with a React app on SQL Server. It covers the whole of the Level 1 brief:
@@ -13,9 +15,7 @@ LedgerPay is a .NET 10 API with a React app on SQL Server. It covers the whole o
 - Every money request carries an `Idempotency-Key`, so pressing confirm twice or retrying after a dropped connection moves the money once.
 - An operator or an admin can freeze and unfreeze a wallet with a reason.
 
-Beyond the brief it has refresh tokens with a sessions page, a back office for operators and admins (find a customer, read every transaction, an audit log, and restricting an operator account), rate limits, structured logs, a health check, and a Docker Compose file that starts the whole stack with one command.
-
-Screens: landing page, sign in, register, wallet, send money, history, sessions, operator top-up, and the back office: an overview of what needs a look, customers, one customer (with freeze or unfreeze), every transaction, the audit log and the staff page (the last two for admins).
+Beyond the brief it has refresh tokens with a sessions page, a back office for operators and admins (customers, every transaction, an audit log, restricting an operator), rate limits, structured logs, a health check, a Docker Compose file that starts the whole stack with one command, and a hosted copy (see section 6).
 
 The data model is in [docs/erd.png](docs/erd.png) (source in [docs/erd.mmd](docs/erd.mmd)), and the API description is in [docs/openapi.json](docs/openapi.json).
 
@@ -87,9 +87,9 @@ cd backend
 dotnet run --project tools/LedgerPay.DbTool -- setup
 ```
 
-with `ConnectionStrings__Migration`, `Seed__AdminPassword`, `Seed__OperatorPassword` and `Seed__CustomerPassword` set as environment variables or user secrets (the lines are in `.env.example`). `setup` is `migrate`, `permissions` and `seed` in that order, and each can be run alone. The seed is a DbTool command and not a SQL script because the passwords must be hashed by the same hasher the API uses, and they come from configuration and never from Git.
+with `ConnectionStrings__Migration` and the three `Seed__*Password` values set as environment variables or user secrets (see `.env.example`). `setup` runs `migrate`, `permissions` and `seed` in that order, and each can run alone. The seed is a DbTool command and not a SQL script because the passwords must be hashed by the API's own hasher and never come from Git.
 
-For anyone without the .NET SDK, [db/schema.sql](db/schema.sql) is the same schema as one idempotent script. Run it on an empty database with `sqlcmd -S <server> -d <database> -I -b -i db/schema.sql` (the `-I` flag matters). It does not contain the permissions or the seed data. It is generated from the migrations, and CI fails when the two differ.
+Without the .NET SDK, [db/schema.sql](db/schema.sql) is the same schema as one idempotent script: `sqlcmd -S <server> -d <database> -I -b -i db/schema.sql` on an empty database (`-I` matters). It has no permissions or seed data. It is generated from the migrations, and CI fails when the two differ.
 
 `LedgerEntries` and `AuditLogs` reject `UPDATE` and `DELETE` with a trigger, and the API login has no right to do either.
 
@@ -203,15 +203,15 @@ Every error is an RFC 7807 Problem Details body with a stable `code` (for exampl
 ## 9. How to run the tests
 
 ```
-cd backend && dotnet test        # unit tests and integration tests, 1012 in all
+cd backend && dotnet test        # unit tests and integration tests, 1015 in all
 cd frontend && npm test          # Vitest, 244 tests
 ```
 
 The backend integration tests need Docker. They start one SQL Server container for the whole run with Testcontainers, apply the real migrations, triggers and view, and connect as the same limited login the API ships with. They do not use the EF Core in-memory provider. The first run is slow because the image has to start, and under Rosetta it is slower still.
 
-The backend tests cover, among others: fee rounding below the minimum, in range and above the maximum; available balance; every transfer rule in order; balanced postings after a transfer; the same idempotency key moving money once, including ten requests at once; twenty parallel transfers from a wallet that can only afford some of them, where exactly that many succeed and the balance never goes negative; a failed transfer leaving no entries; a customer getting 404 for someone else's transaction; the append-only triggers; the database permissions; the lockout; and rotation and reuse of refresh tokens. The parallel tests that guard a lock were checked by taking the lock out and watching them fail.
+The backend tests cover fee rounding, available balance, every transfer rule in order, balanced postings, the same idempotency key moving money once (also with ten requests at once), twenty parallel transfers from a wallet that can afford only some of them (exactly that many succeed and the balance never goes negative), a failed transfer leaving no entries, a 404 for someone else's transaction, the append-only triggers, the database permissions, the lockout, and refresh token rotation and reuse. The tests that guard a lock were checked by taking the lock out and watching them fail.
 
-The frontend tests cover, among others: the confirmation step showing the server's amount, fee and total; a protected route sending a visitor to sign in; the confirm button not firing twice; and a reload keeping the session.
+The frontend tests cover the confirmation step showing the server's amount, fee and total, a protected route sending a visitor to sign in, the confirm button not firing twice, and a reload keeping the session.
 
 Also in `frontend`: `npm run lint`, `npm run typecheck` and `npm run build`. CI runs all of this on every pull request, plus a check that `db/schema.sql` matches the migrations, a build of the Docker images, and `npm audit` at high.
 
@@ -235,7 +235,7 @@ References go one way: Domain knows nothing, Application knows Domain, Infrastru
 
 A request goes to a controller, which says who may call it and runs the validator. The controller calls a service, the service talks to the database, and it answers with a `ServiceResult` that holds a value or an error code. One place turns the code into a Problem Details response, from a single error catalogue.
 
-The browser and the API share an origin: nginx serves the built app and passes `/api`, `/swagger` and `/openapi` to the API (Vite does the same in development). That is why the refresh cookie can be `SameSite=Strict`. CORS is still configured from an explicit list of origins, with no wildcard, and the API will not start with one.
+The browser and the API share an origin: nginx (Vercel when hosted, Vite in development) passes `/api`, `/swagger` and `/openapi` to the API. That is why the refresh cookie can be `SameSite=Strict`. CORS still uses an explicit list of origins, and the API will not start with a wildcard.
 
 In the app, one module makes every API call, attaches the token, and turns an error into a typed error with the code. One file maps each error code to a sentence for the user, and a test reads the backend's list of codes and fails when one has no sentence.
 
@@ -250,7 +250,7 @@ For example, sending LKR 5,000.00 costs the sender 5,025.00, because the fee is 
 
 `Wallets.Balance` is a cached total that moves inside the same database transaction as the entries, so it always equals credits minus debits on the wallet's account. A wallet can never go below zero (a CHECK constraint backs the rule) or above LKR 2,000,000.00. The view `vw_WalletStatement` works out the running balance after each line with a window function, and the date filters are applied outside it, so the running balance is that of the whole wallet and not of the filtered rows.
 
-**Rules.** A transfer is checked in a fixed order inside the locked section, so the answer is the same every time: recipient not found, sending to yourself, below the minimum, above the maximum, sender frozen, recipient frozen, balance does not cover the amount plus the fee, recipient over the cap. A top-up checks: wallet not found, wallet frozen, duplicate bank reference, balance cap.
+**Rules.** A transfer is checked in a fixed order inside the locked section, so the answer is the same every time: recipient not found, sending to yourself, below the minimum, above the maximum, sender frozen, recipient frozen, balance below the amount plus the fee, recipient over the cap.
 
 **Failed attempts.** A request with a bad format is refused with 400 before any work. A business rule that refuses a transfer is recorded as a `Transactions` row with status `Failed` and a failure code, with an audit entry, and posts nothing. The sender sees it in their history with the reason.
 
@@ -282,30 +282,27 @@ The hash is taken from the validated request in a canonical form, so spacing and
 ## 13. Security notes
 
 - **Passwords** are hashed with the ASP.NET Core Identity hasher (PBKDF2). The policy (10 to 128 characters with upper, lower, digit and symbol) is enforced on the server, and the maximum length stops a long password from burning CPU.
-- **Sign-in** locks an account for 15 minutes after 5 wrong passwords. The lock is checked before the password, so a locked account answers the same whether or not the password was right. An unknown email costs the same work as a known one. Register does say when an email is taken, so the lock adds no new leak.
+- **Sign-in** locks an account for 15 minutes after 5 wrong passwords. The lock is checked before the password, and an unknown email costs the same work as a known one.
 - **Access tokens** are HS256 JWTs that last 15 minutes. The server checks issuer, audience, lifetime and signature, accepts only that algorithm, and allows 30 seconds of clock slack. The key comes from configuration and is at least 32 bytes. For an operator or an admin the API also reads the user row on each call, so a restricted account loses access at once and not when the token runs out.
 - **Refresh tokens** are 256 random bits. Only their SHA-256 is stored. Every use replaces the token, and a replaced token that comes back after a 10 second grace ends the whole session. A session lasts 7 days from its last use and 30 days at most. The token travels in an `HttpOnly`, `SameSite=Strict` cookie that is only sent to `/api/v1/auth`, and `Secure` wherever the site uses https. Refresh, sign out and ending a session also refuse a request that began on another site. The access token is kept in the page's memory and never in browser storage.
 - **Authorization** is a set of named policies in one file, mapped from the three roles, and every route says who may call it. The user id always comes from the token and never from the body, the route or a header. A customer cannot reach another wallet by changing a number or a reference.
 - **Database**: the API connects as a limited login that is not `sa`. It has no `DELETE` anywhere, no `UPDATE` on the ledger or audit tables, and `UPDATE` on only five columns of the users table (the failed sign-in count, the lock and the restriction) and two columns of the refresh token table. A separate login owns the schema. All queries are parameterised.
-- **Rate limits** count sign-in and register per address, lookup and money routes per user, refresh per address, and the back-office lists and searches per staff member (120 a minute). The counters are in memory, so they are not shared between API instances. Behind a proxy the API only trusts the forwarded address when that is switched on.
-- **Audit log** records register, sign-in (and failures), lockout, refresh, reuse, sign-out, ending a session, top-up, transfer (and failures), freeze and unfreeze, restricting an operator and lifting it, and a staff member opening a customer's page, with the address and the correlation id. Money events are written in the same transaction as the money. No entry holds a password, a token or an email.
-- **Customer data for staff**: the customer list shows an email and a mobile number cut down (n***@example.com), and the whole values are only on the page of one customer, which is written to the audit log once for a visit. Only admins can read the audit log.
-- **Errors and logs**: one Problem Details shape, no stack traces. Logs are structured, carry the route pattern and not the path, and never hold passwords, tokens, request bodies, emails or phone numbers.
-- **Headers**: responses under `/api` are `no-store`, with `nosniff`, `no-referrer` and `DENY` framing. nginx sends a content security policy for the app.
-- **Secrets**: `.env` and user secrets only, never Git. `.env.example` has empty values. Seed passwords come from configuration.
-- **The local Compose stack** is plain http on `localhost`, with `TrustServerCertificate=True` on the database connection and the refresh cookie not marked `Secure`. That is fine for a laptop and not for a host. A real deployment needs https, a real certificate and `Sessions__CookieSecure` left at `true`.
+- **Rate limits** count sign-in, register and refresh per address, and lookup, money routes and back-office lists per user. The counters are in memory, so they are not shared between API instances. Behind a proxy the API trusts the forwarded address only when that is switched on.
+- **Audit log** records register, sign-in and its failures, lockout, refresh and reuse, sign-out, top-up, transfer and its failures, freeze and unfreeze, restricting an operator, and a staff member opening a customer's page, with the address and the correlation id. Money events are written in the same transaction as the money. No entry holds a password, a token or an email. Only admins can read it.
+- **Customer data for staff**: the customer list shows a cut-down email and mobile number (n***@example.com). The whole values are only on one customer's page, and a visit is audited once.
+- **Errors, logs and headers**: one Problem Details shape and no stack traces. Logs are structured and never hold passwords, tokens, request bodies, emails or phone numbers. Responses under `/api` are `no-store` with `nosniff`, `no-referrer` and `DENY` framing, and the app is served with a content security policy.
+- **Secrets** live in `.env`, user secrets and the host's settings, never in Git. `.env.example` has empty values.
+- **Swagger and the OpenAPI document are public** on the hosted copy, because the brief documents the API in Swagger and reviewers open it. They list routes and hold no data, and every route that matters still needs a token. A production system would switch them off or put them behind a sign-in.
+- **The local Compose stack** is plain http on `localhost`, with `TrustServerCertificate=True` on the database connection and the refresh cookie not marked `Secure`. That is fine for a laptop and not for a host, which needs https and `Sessions__CookieSecure` left at `true`.
 
 ## 14. Limitations
 
-- Idempotency keys are never deleted. There is no expiry job.
-- Refresh token rows and their audit entries are kept for ever, and the API login cannot delete them.
+- Idempotency keys and refresh token rows are never deleted. There is no expiry job.
 - Ending a session does not cancel the access token it already issued, which keeps working for up to 15 minutes. After a sign out, another open tab shows the signed-in screen until its token runs out.
-- If the server cannot be reached when someone signs out, the screen signs out but the cookie stays valid until it expires or the session is ended from the sessions page.
-- A locked account keeps its existing sessions. Lockout applies to sign-in only.
-- There is no cap on how many sessions one user can have, and the sessions page shows the newest 50.
+- If the server cannot be reached at sign out, the screen signs out but the cookie stays valid until it expires or the session is ended from the sessions page.
+- A locked account keeps its existing sessions, and there is no cap on how many sessions a user can have. The sessions page shows the newest 50.
 - There is no password change or reset, no email verification and no two-factor sign-in.
-- Restricting a customer's sign-in is not built. A frozen wallet stops the money, and that is the brief's way to stop a customer.
-- Customer tokens are not checked for a restriction on each call. Only operator and admin tokens are, because only operators can be restricted.
+- Restricting a customer's sign-in is not built. A frozen wallet stops the money, which is the brief's way to stop a customer.
 - The list of staff is not paged. The customer search and the audit filter scan their tables, which is fine at this size and not for millions of rows.
 - Fees, limits and the balance cap are changed by editing `SystemSettings`. There is no screen for it.
 - No holds or approvals for large transfers, no reversals, no withdrawals, no CSV statement. The brief marks these as bonus.
