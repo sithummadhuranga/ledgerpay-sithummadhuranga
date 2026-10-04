@@ -11,6 +11,7 @@ export interface ErrorContext {
 type Describe = (error: ApiError, context: ErrorContext) => string
 
 const minutes = (seconds: number | undefined) => Math.max(1, Math.ceil((seconds ?? 900) / 60))
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`
 
 const messages: Record<string, Describe> = {
   VALIDATION_FAILED: () => 'Some details need fixing. Check the fields marked below.',
@@ -19,7 +20,7 @@ const messages: Record<string, Describe> = {
   INVALID_CREDENTIALS: () => 'The email or password is wrong.',
   FORBIDDEN: () => 'You do not have access to this.',
   ACCOUNT_LOCKED: (error) =>
-    `This account is locked after too many failed sign-ins. Try again in ${minutes(error.retryAfterSeconds)} minutes.`,
+    `This account is locked after too many failed sign-ins. Try again in ${plural(minutes(error.retryAfterSeconds), 'minute')}.`,
   WALLET_NOT_FOUND: () => 'We could not find that wallet.',
   TRANSACTION_NOT_FOUND: () => 'We could not find that transaction.',
   RECIPIENT_NOT_FOUND: () => 'We could not find a wallet for that recipient. Check the number and try again.',
@@ -36,10 +37,10 @@ const messages: Record<string, Describe> = {
     amount && fee
       ? `Your balance does not cover ${formatMoney(amount)} plus the ${formatMoney(fee)} fee.`
       : 'Your balance does not cover the amount plus the fee.',
-  RECEIVER_BALANCE_LIMIT_EXCEEDED: () => 'The recipient’s wallet cannot hold that much.',
+  RECEIVER_BALANCE_LIMIT_EXCEEDED: () => 'The recipient wallet cannot hold that much.',
   BALANCE_LIMIT_EXCEEDED: () => 'That would take the wallet over its balance limit.',
   RATE_LIMITED: (error) =>
-    `Too many requests. Try again in ${error.retryAfterSeconds ?? 60} seconds.`,
+    `Too many requests. Try again in ${plural(error.retryAfterSeconds ?? 60, 'second')}.`,
   INTERNAL_ERROR: (error) =>
     `Something went wrong on our side. Try again.${error.traceId ? ` Quote ${error.traceId} if it keeps happening.` : ''}`,
   NOT_FOUND: () => 'We could not find that.',

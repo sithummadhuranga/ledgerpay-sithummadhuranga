@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { showFieldErrors } from '@/lib/forms'
 import { describeError } from '@/lib/errors'
+import { safeInternalPath } from '@/lib/navigation'
 import { useAuth } from './useAuth'
 import { loginSchema, type LoginValues } from './schemas'
 
@@ -27,7 +28,7 @@ export function LoginPage() {
 
   // Once signed in, go back to the page that was asked for. This also covers a signed-in user who opens /login.
   if (user) {
-    return <Navigate to={state.from ?? '/'} replace />
+    return <Navigate to={safeInternalPath(state.from)} replace />
   }
 
   const onSubmit = form.handleSubmit(async (values) => {

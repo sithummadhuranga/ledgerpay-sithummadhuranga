@@ -98,6 +98,22 @@ describe('the api client', () => {
     expect(tokenStore.get()).toBeNull()
   })
 
+  it('does not end a newer session when a 401 comes back for a request from an older one', async () => {
+    const ended = vi.fn()
+    tokenStore.whenSessionEnds(ended)
+    tokenStore.set('old-token')
+    let answer: (response: Response) => void = () => undefined
+    fetchMock.mockReturnValue(new Promise<Response>((resolve) => (answer = resolve)))
+
+    const slow = api.get('/wallets/me').catch(() => undefined)
+    tokenStore.set('new-token')
+    answer(respond(401, { code: 'UNAUTHENTICATED' }))
+    await slow
+
+    expect(ended).not.toHaveBeenCalled()
+    expect(tokenStore.get()).toBe('new-token')
+  })
+
   it('does not end a session for a wrong password, which is a 401 with no token', async () => {
     const ended = vi.fn()
     tokenStore.whenSessionEnds(ended)

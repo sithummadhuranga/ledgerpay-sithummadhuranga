@@ -22,12 +22,21 @@ describe('error messages', () => {
       const text = describeError(new ApiError(400, code))
       expect(text.length).toBeGreaterThan(10)
       expect(text).not.toMatch(/!|oops/i)
+      expect(text).toMatch(/^[\x20-\x7E]+$/)
     }
   })
 
   it('tells a locked account how many minutes to wait', () => {
     const text = describeError(new ApiError(423, 'ACCOUNT_LOCKED', {}, 900))
     expect(text).toContain('15 minutes')
+  })
+
+  it('says one minute and one second in the singular', () => {
+    expect(describeError(new ApiError(423, 'ACCOUNT_LOCKED', {}, 30))).toContain('in 1 minute.')
+    expect(describeError(new ApiError(423, 'ACCOUNT_LOCKED', {}, 60))).toContain('in 1 minute.')
+    expect(describeError(new ApiError(423, 'ACCOUNT_LOCKED', {}, 61))).toContain('in 2 minutes.')
+    expect(describeError(new ApiError(429, 'RATE_LIMITED', {}, 1))).toContain('in 1 second.')
+    expect(describeError(new ApiError(429, 'RATE_LIMITED', {}, 30))).toContain('in 30 seconds.')
   })
 
   it('names the amount and the fee when the balance is too low', () => {

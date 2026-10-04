@@ -69,6 +69,7 @@ describe('the sign-in screen', () => {
     const field = await screen.findByLabelText('Email')
     expect(field).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByText('Enter a valid email address.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps the token in memory only', async () => {
@@ -100,5 +101,39 @@ describe('the sign-in screen', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
     expect(await screen.findByText('Your session ended. Sign in again.')).toBeInTheDocument()
+  })
+
+  it.each(['//evil.example/x', '/\\evil.example', 'https://evil.example/', 'javascript:alert(1)', ''])(
+    'goes to the wallet, not to %j, when the page to return to is not a path inside the app',
+    async (from) => {
+      mockApi({
+        'POST /auth/login': json(200, customerLogin),
+        'GET /wallets/me': json(200, { walletNumber: '482915067314', holderName: 'Nimali Perera', balance: 5, availableBalance: 5, currency: 'LKR', status: 'Active' }),
+        'GET /wallets/me/transactions?page=1&pageSize=5': json(200, { items: [], page: 1, pageSize: 5, totalCount: 0, totalPages: 0 }),
+      })
+      const { user, router } = renderApp({ pathname: '/login', state: { from } })
+
+      await fillAndSubmit(user)
+
+      await screen.findByText('LKR 5.00')
+      expect(router.state.location.pathname).toBe('/')
+    },
+  )
+
+  it('forgets what the last user loaded when they sign out', async () => {
+    mockApi({
+      'POST /auth/login': json(200, customerLogin),
+      'GET /wallets/me': json(200, { walletNumber: '482915067314', holderName: 'Nimali Perera', balance: 5, availableBalance: 5, currency: 'LKR', status: 'Active' }),
+      'GET /wallets/me/transactions?page=1&pageSize=5': json(200, { items: [], page: 1, pageSize: 5, totalCount: 0, totalPages: 0 }),
+    })
+    const { user, client } = renderApp('/login')
+    await fillAndSubmit(user)
+    await screen.findByText('LKR 5.00')
+    expect(client.getQueryCache().getAll().length).toBeGreaterThan(0)
+
+    await user.click(screen.getByRole('button', { name: /sign out/i }))
+
+    await screen.findByRole('heading', { name: 'Sign in' })
+    expect(client.getQueryCache().getAll()).toHaveLength(0)
   })
 })

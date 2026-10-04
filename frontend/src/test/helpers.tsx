@@ -36,16 +36,17 @@ export function mockApi(replies: Record<string, Reply>) {
   return { calls, fetchMock }
 }
 
-export function renderApp(path = '/', routes: RouteObject[] = appRoutes) {
+export function renderApp(entry: string | { pathname: string; state?: unknown } = '/', routes: RouteObject[] = appRoutes) {
   tokenStore.clear()
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
+  const router = createMemoryRouter(routes, { initialEntries: [entry] })
   const user = userEvent.setup()
+  const client = makeQueryClient(false)
   const view = render(
-    <Providers client={makeQueryClient(false)}>
+    <Providers client={client}>
       <RouterProvider router={router} />
     </Providers>,
   )
-  return { router, user, ...view }
+  return { router, user, client, ...view }
 }
 
 export const customerLogin: LoginResponse = {

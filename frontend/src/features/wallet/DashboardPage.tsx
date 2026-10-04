@@ -43,7 +43,7 @@ export function DashboardPage() {
           <div className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
             <span>Wallet number</span>
             <span className="num text-foreground">{wallet.data.walletNumber}</span>
-            <CopyButton value={wallet.data.walletNumber} label="Copy wallet number" />
+            <CopyButton value={wallet.data.walletNumber} subject="wallet number" />
           </div>
         </section>
       )}

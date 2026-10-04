@@ -96,5 +96,6 @@ describe('the dashboard', () => {
 
     expect(await navigator.clipboard.readText()).toBe('482915067314')
     expect(screen.getByText('Copied')).toBeInTheDocument()
+    expect(screen.getByText('Wallet number copied')).toHaveAttribute('aria-live', 'polite')
   })
 })

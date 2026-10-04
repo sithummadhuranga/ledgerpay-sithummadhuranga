@@ -52,8 +52,9 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   )
 
   // A token that was sent and is no longer good ends the session. A wrong password at sign-in is a 401 too,
-  // but it has its own code and no token was sent.
-  if (error.code === 'UNAUTHENTICATED' && token) {
+  // but it has its own code and no token was sent. If the token has been replaced since this request began, the
+  // answer is about the old session and must not end the new one.
+  if (error.code === 'UNAUTHENTICATED' && token && tokenStore.get() === token) {
     tokenStore.clear()
     tokenStore.sessionEnded()
   }
