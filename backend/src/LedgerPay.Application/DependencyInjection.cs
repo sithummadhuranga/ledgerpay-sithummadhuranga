@@ -23,6 +23,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
         services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
+        services.AddSingleton<IValidator<QuoteRequest>, QuoteRequestValidator>();
         services.AddSingleton<IValidator<TransferRequest>, TransferRequestValidator>();
         services.AddSingleton<IValidator<TopUpRequest>, TopUpRequestValidator>();
         services.AddSingleton<IValidator<WalletStatusRequest>, WalletStatusRequestValidator>();

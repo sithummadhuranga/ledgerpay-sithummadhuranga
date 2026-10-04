@@ -29,6 +29,20 @@ public class CorsAndHeadersTests(SqlServerFixture sql)
         Assert.Contains("POST", string.Join(",", response.Headers.GetValues("Access-Control-Allow-Methods")));
     }
 
+    [Fact]
+    public async Task The_frontend_may_send_a_patch_to_the_status_route()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Options, "/api/v1/admin/wallets/100000000000/status");
+        request.Headers.Add("Origin", ApiFactory.AllowedOrigin);
+        request.Headers.Add("Access-Control-Request-Method", "PATCH");
+        request.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
+
+        var response = await sql.Api.CreateClient().SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.True(response.IsSuccessStatusCode);
+        Assert.Contains("PATCH", string.Join(",", response.Headers.GetValues("Access-Control-Allow-Methods")));
+    }
+
     [Theory]
     [InlineData("https://evil.example")]
     [InlineData("http://localhost:5174")]

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
+using LedgerPay.Domain.Identifiers;
 using LedgerPay.Domain.Rules;
 
 namespace LedgerPay.Application.Common;
@@ -16,8 +17,10 @@ public static class ValidationRules
             .Must(amount => decimal.Round(amount, 2) == amount).WithMessage("Amount can have at most 2 decimal places.")
             .LessThanOrEqualTo(LargestAmount).WithMessage("Amount is too large.");
 
+    public const string WalletNumberMessage = "Wallet number must be 12 digits.";
+
     public static IRuleBuilderOptions<T, string?> WalletNumber<T>(this IRuleBuilder<T, string?> rule) =>
-        rule.NotNull().Matches(@"\A[0-9]{12}\z").WithMessage("Wallet number must be 12 digits.");
+        rule.NotNull().Must(WalletNumbers.IsValid).WithMessage(WalletNumberMessage);
 
     public static IRuleBuilderOptions<T, string> BankReference<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotNull().Matches(@"\A[A-Za-z0-9]{6,40}\z").WithMessage("Bank reference must be 6 to 40 letters and digits.");

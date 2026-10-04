@@ -45,6 +45,18 @@ public class TokenPipelineTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task An_endpoint_with_no_attribute_still_asks_for_a_token()
+    {
+        var client = sql.Api.CreateClient();
+
+        var anonymous = await ApiCalls.GetAsync(client, "/api/v1/probe/unmarked", token: null);
+        var signedIn = await ApiCalls.GetAsync(client, "/api/v1/probe/unmarked", await ApiCalls.NewCustomerTokenAsync(client));
+
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.OK, signedIn.StatusCode);
+    }
+
+    [Fact]
     public async Task No_token_answers_401_in_the_problem_shape_with_a_bearer_challenge()
     {
         var response = await ApiCalls.GetAsync(Client(), SignedIn, token: null);

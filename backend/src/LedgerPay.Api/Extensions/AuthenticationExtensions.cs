@@ -1,3 +1,4 @@
+using LedgerPay.Api.Authorization;
 using LedgerPay.Api.Errors;
 using LedgerPay.Domain.Constants;
 using LedgerPay.Infrastructure.Security;
@@ -50,7 +51,7 @@ public static class AuthenticationExtensions
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(Policies.Register);
         return services;
     }
 }

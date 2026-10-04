@@ -88,7 +88,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
         return builder.ConnectionString;
     }
 
-    private static readonly SeedOptions TestSeedOptions = new()
+    public static readonly SeedOptions TestSeedOptions = new()
     {
         AdminPassword = "Admin-pass-for-tests-1!",
         OperatorPassword = "Operator-pass-for-tests-2!",
