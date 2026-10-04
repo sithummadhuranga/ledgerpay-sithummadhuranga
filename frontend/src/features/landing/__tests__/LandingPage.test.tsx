@@ -10,39 +10,41 @@ describe('the landing page', () => {
 
     renderApp('/')
 
-    expect(await screen.findByRole('heading', { level: 1, name: /send rupees the way a bank would count them/i })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /create an account/i }).length).toBeGreaterThanOrEqual(2)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Send money by mobile number. See the fee first.' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /create an account/i }).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByRole('link', { name: 'Sign in' }).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText(/mobile number that starts with \+947/)).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('marks the statement as an example, because the names and numbers are not a real account', () => {
+  it('shows the confirm screen of a send and marks it as an example, because the names and numbers are not a real account', () => {
     mockApi({})
 
     renderApp('/')
 
-    const example = screen.getByRole('figure', { name: 'Example statement' })
+    const example = screen.getByRole('figure', { name: 'Example of the confirm screen' })
     expect(within(example).getByText('Example')).toBeInTheDocument()
+    expect(within(example).getByText('LKR 5,025.00')).toBeInTheDocument()
+    expect(within(example).getByText('N*** P***')).toBeInTheDocument()
   })
 
-  it('explains how it works in order and lists what keeps the numbers right', () => {
+  it('says in three plain lines what the visitor gets, and lists what keeps the numbers right', () => {
     mockApi({})
 
     renderApp('/')
 
-    const steps = within(screen.getByRole('heading', { name: 'How it works' }).closest('section')!).getAllByRole('listitem')
-    expect(steps).toHaveLength(4)
-    expect(screen.getByRole('heading', { name: 'What keeps the numbers right' })).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'What you get' })).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByRole('heading', { name: 'How it stays correct' })).toBeInTheDocument()
     expect(screen.getByText('Double entry')).toBeInTheDocument()
   })
 
-  it('has links to its own sections and to the API documentation', () => {
+  it('has a link to its safeguards and to the API documentation', () => {
     mockApi({})
 
     renderApp('/')
 
     const nav = screen.getByRole('navigation', { name: 'Sections' })
-    expect(within(nav).getByRole('link', { name: 'How it works' })).toHaveAttribute('href', '#how')
+    expect(within(nav).getByRole('link', { name: 'How it stays correct' })).toHaveAttribute('href', '#safeguards')
     expect(within(nav).getByRole('link', { name: 'API documentation' })).toHaveAttribute('href', '/swagger')
   })
 

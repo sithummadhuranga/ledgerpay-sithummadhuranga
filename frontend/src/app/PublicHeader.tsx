@@ -16,11 +16,8 @@ export function PublicHeader({ showSections = false }: { showSections?: boolean 
         </Link>
         {showSections ? (
           <nav aria-label="Sections" className="hidden items-center gap-8 text-sm md:flex">
-            <a href="#how" className="text-muted-foreground hover:text-foreground">
-              How it works
-            </a>
             <a href="#safeguards" className="text-muted-foreground hover:text-foreground">
-              Safeguards
+              How it stays correct
             </a>
             <a href="/swagger" className="text-muted-foreground hover:text-foreground">
               API documentation
