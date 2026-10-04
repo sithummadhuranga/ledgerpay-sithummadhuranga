@@ -1,0 +1,123 @@
+erDiagram
+    Users ||--o{ UserRoles : "has"
+    Roles ||--o{ UserRoles : "gives"
+    Users ||--o| Wallets : "owns"
+    Users |o--o{ Wallets : "froze or unfroze (StatusChangedByUserId)"
+    Wallets ||--o| LedgerAccounts : "has one account"
+    Users ||--o{ Transactions : "initiates"
+    Wallets |o--o{ Transactions : "sends (SenderWalletId)"
+    Wallets |o--o{ Transactions : "receives (ReceiverWalletId)"
+    Transactions ||--o{ LedgerEntries : "posts (none when Failed)"
+    LedgerAccounts ||--o{ LedgerEntries : "is debited or credited by"
+    Users ||--o{ IdempotencyKeys : "sends"
+    Transactions |o--o{ IdempotencyKeys : "is the result of"
+    Users |o--o{ AuditLogs : "acts in"
+    Users ||--o{ RefreshTokens : "signs in with"
+    Users |o--o{ Users : "restricted by (RestrictedByUserId)"
+
+    Users {
+        guid Id PK
+        varchar Email UK "lower case"
+        varchar Phone UK "+947XXXXXXXX"
+        nvarchar FullName
+        varchar PasswordHash
+        int FailedLoginCount
+        datetime2 LockoutEnd
+        datetime2 CreatedAt
+        datetime2 RestrictedAt "set when an admin restricts an operator"
+        nvarchar RestrictedReason
+        guid RestrictedByUserId FK
+    }
+    Roles {
+        guid Id PK
+        varchar Name UK "Customer, Operator, Admin"
+    }
+    UserRoles {
+        guid UserId PK, FK
+        guid RoleId PK, FK
+    }
+    Wallets {
+        guid Id PK
+        varchar WalletNumber UK "12 digits"
+        guid UserId FK, UK
+        decimal Balance "cached, never negative"
+        varchar Status "Active or Frozen"
+        nvarchar StatusReason
+        guid StatusChangedByUserId FK
+        datetime2 StatusChangedAt
+        datetime2 CreatedAt
+        rowversion RowVersion
+    }
+    LedgerAccounts {
+        guid Id PK
+        varchar Code UK
+        nvarchar Name
+        varchar Type
+        guid WalletId FK "null for system accounts"
+    }
+    Transactions {
+        guid Id PK
+        varchar Reference UK
+        varchar Type "TopUp or Transfer"
+        varchar Status "Completed or Failed"
+        varchar FailureCode "only when Failed"
+        guid SenderWalletId FK
+        guid ReceiverWalletId FK
+        decimal Amount
+        decimal Fee
+        nvarchar Note "up to 140"
+        nvarchar RequestedReceiver "what the sender typed, on a failed transfer"
+        varchar BankReference "unique among completed top-ups"
+        guid InitiatedByUserId FK
+        datetime2 CreatedAt
+    }
+    LedgerEntries {
+        guid Id PK
+        bigint Sequence "append order"
+        guid TransactionId FK
+        guid LedgerAccountId FK
+        decimal Debit "one of Debit and Credit is above 0"
+        decimal Credit
+        datetime2 CreatedAt
+    }
+    IdempotencyKeys {
+        guid Id PK
+        guid UserId FK
+        varchar Key "unique with UserId and Endpoint"
+        varchar Endpoint
+        varchar RequestHash
+        int ResponseStatusCode
+        nvarchar ResponseBody
+        guid TransactionId FK
+        datetime2 CreatedAt
+    }
+    SystemSettings {
+        guid Id PK
+        varchar Key UK "fee, limits, balance cap"
+        decimal Value
+        datetime2 UpdatedAt
+    }
+    RefreshTokens {
+        guid Id PK
+        guid UserId FK
+        guid FamilyId "one family is one session"
+        char TokenHash UK "SHA-256, never the token"
+        datetime2 CreatedAt
+        datetime2 SessionStartedAt
+        datetime2 ExpiresAt
+        datetime2 RevokedAt
+        guid ReplacedById "the next token of the family"
+        varchar IpAddress
+        nvarchar UserAgent
+    }
+    AuditLogs {
+        guid Id PK
+        datetime2 CreatedAt
+        guid ActorUserId FK
+        varchar Action
+        varchar EntityType
+        varchar EntityReference
+        varchar IpAddress
+        varchar CorrelationId
+        nvarchar Details
+    }
