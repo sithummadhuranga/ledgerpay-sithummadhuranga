@@ -6,6 +6,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    restart: unless-stopped
     ports:
       - "127.0.0.1:1433:1433"
     volumes:
@@ -32,6 +33,58 @@ services:
       - ./db/init:/init:ro
     command: ["/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "db", "-U", "sa", "-b", "-i", "/init/01-create-logins.sql"]
     restart: "no"
+
+  # Creates the schema, the permissions and the seed data. It can run again: every step checks first.
+  migrate:
+    build:
+      context: ./backend
+      target: dbtool
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__Migration: "Server=db,1433;Database=LedgerPay;User Id=ledgerpay_migrator;Password=${DB_MIGRATOR_PASSWORD};TrustServerCertificate=True"
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD in .env}
+      Seed__OperatorPassword: ${SEED_OPERATOR_PASSWORD:?set SEED_OPERATOR_PASSWORD in .env}
+      Seed__CustomerPassword: ${SEED_CUSTOMER_PASSWORD:?set SEED_CUSTOMER_PASSWORD in .env}
+    restart: "no"
+
+  api:
+    build:
+      context: ./backend
+      target: api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Api: "Server=db,1433;Database=LedgerPay;User Id=ledgerpay_api;Password=${DB_API_PASSWORD};TrustServerCertificate=True"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY in .env}
+      Cors__AllowedOrigins__0: http://localhost:8080
+      # The web container is the way in, so the client address is the one it forwards. Port 5100 below is a local
+      # door for Swagger and curl: anyone on this machine who uses it can send any address in X-Forwarded-For.
+      ForwardedHeaders__Enabled: "true"
+    ports:
+      - "127.0.0.1:5100:8080"
+    healthcheck:
+      # The image has no curl, so bash opens the connection itself and asks the health route.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /api/v1/health HTTP/1.0\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      target: web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
 
 volumes:
   sqldata:
