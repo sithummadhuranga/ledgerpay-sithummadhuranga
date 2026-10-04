@@ -24,8 +24,7 @@ public sealed class TransactionQueries(IAppDbContext db) : ITransactionQueries
             return ServiceResult<PagedResponse<HistoryItem>>.Fail(ErrorCodes.WalletNotFound);
         }
 
-        // The dates cut the list after the view has worked out the running balance, so the balance after an entry
-        // still counts everything before it, not only the entries inside the dates.
+        // The dates cut the list after the view worked out the running balance, so it still counts every earlier entry.
         var rows = db.WalletStatement(walletId.Value);
         if (query.From is { } from)
         {
@@ -97,9 +96,8 @@ public sealed class TransactionQueries(IAppDbContext db) : ITransactionQueries
                 transaction.SenderWalletNumber, transaction.ReceiverWalletNumber, transaction.BankReference));
         }
 
-        // A completed transaction belongs to the two wallet holders. A failed one has no entries and may name a
-        // wallet that never took part, so it belongs to the customer who tried it. Anyone else gets the same
-        // answer as for a reference that does not exist.
+        // A completed transaction belongs to its two wallet holders, a failed one to who tried it.
+        // Anyone else gets the same answer as for a reference that does not exist.
         var isSender = transaction.SenderUserId == userId;
         var isReceiver = transaction.ReceiverUserId == userId;
         var isOwner = transaction.Status == TransactionStatus.Completed

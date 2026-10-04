@@ -6,8 +6,8 @@ using Microsoft.OpenApi;
 
 namespace LedgerPay.Api.Extensions;
 
-// The OpenAPI document is made from the routes and their attributes. This adds what the routes cannot say by
-// themselves: the bearer token, the 401 and 403 answers, and that the Idempotency-Key header is required.
+// The OpenAPI document comes from the routes. This adds the bearer token, the 401, 403 and 429 answers,
+// and that the Idempotency-Key header is required.
 public static class ApiDocsExtensions
 {
     public const string DocumentPath = "/openapi/v1.json";

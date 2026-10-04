@@ -4,9 +4,8 @@ using Serilog.Events;
 
 namespace LedgerPay.Api.Extensions;
 
-// Structured logs as one JSON object a line on the console, set in the Serilog section of the settings.
-// What may be logged: the method, the route pattern (never the path), the status, the time and the trace id.
-// Never: passwords, tokens, request bodies, query strings, emails or phone numbers.
+// One JSON object a line on the console, set in the Serilog section. Logged: method, route pattern (never the path),
+// status, time and trace id. Never: passwords, tokens, bodies, query strings, emails or phone numbers.
 public static class LoggingExtensions
 {
     private const string RoutePatternKey = "LedgerPay.RoutePattern";

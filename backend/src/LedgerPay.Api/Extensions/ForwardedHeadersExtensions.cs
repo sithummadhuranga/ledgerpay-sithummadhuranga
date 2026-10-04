@@ -6,9 +6,8 @@ public static class ForwardedHeadersExtensions
 {
     public const string SettingName = "ForwardedHeaders:Enabled";
 
-    // Off by default. Turn it on only when the API sits behind a proxy that you control, such as the platform's
-    // front end, because then every request reaches the API from the proxy and the client address is only in the header.
-    // With it on, any sender is trusted as a proxy, so it must not be reachable except through the proxy.
+    // Off by default. Turn it on only behind a proxy you control, where the client address is only in the header.
+    // With it on any sender is trusted as the proxy, so the API must not be reachable except through it.
     public static IServiceCollection AddForwardedHeadersIfEnabled(this IServiceCollection services, IConfiguration configuration)
     {
         if (configuration.GetValue<bool>(SettingName))

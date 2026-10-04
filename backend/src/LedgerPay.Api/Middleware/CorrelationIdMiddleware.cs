@@ -3,9 +3,8 @@ using Serilog.Context;
 
 namespace LedgerPay.Api.Middleware;
 
-// Gives every request one id. It is the trace id in error answers, the correlation id in the audit log, the
-// X-Correlation-Id response header and the TraceId on every log event, so a report from a user can be matched
-// to a log line and an audit entry.
+// Gives every request one id: the trace id in error answers, the X-Correlation-Id header, the audit entry's
+// correlation id and the TraceId of every log event. A report from a user can then be matched to all of them.
 public sealed partial class CorrelationIdMiddleware(RequestDelegate next)
 {
     public const string HeaderName = "X-Correlation-Id";

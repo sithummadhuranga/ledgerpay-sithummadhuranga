@@ -23,14 +23,14 @@ public sealed class WalletService(IAppDbContext db) : IWalletService
             return ServiceResult<WalletResponse>.Fail(ErrorCodes.WalletNotFound);
         }
 
-        // There are no holds at this level, so the available balance is the balance. AvailableBalance keeps that rule in one place.
+        // There are no holds at this level, so the available balance is the balance.
         return ServiceResult<WalletResponse>.Ok(new WalletResponse(
             wallet.WalletNumber, wallet.FullName, wallet.Balance, wallet.Balance, Currency, wallet.Status));
     }
 
     public async Task<ServiceResult<LookupResponse>> LookupAsync(LookupQuery query, CancellationToken cancellationToken)
     {
-        // The validator checks this first. It is checked again because a lookup with neither value would match any wallet whose phone is null.
+        // The validator checks this first. With neither value the query would match a wallet whose phone is null.
         if ((query.WalletNumber is null) == (query.Phone is null))
         {
             return ServiceResult<LookupResponse>.Fail(ErrorCodes.ValidationFailed);
