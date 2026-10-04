@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStore } from '@/lib/api/token'
-import { customerLogin, json, mockApi, problem, renderApp } from '@/test/helpers'
+import { customerLogin, json, mockApi, problem, renderApp, signOut } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -116,7 +116,7 @@ describe('the sign-in screen', () => {
       await fillAndSubmit(user)
 
       await screen.findByText('LKR 5.00')
-      expect(router.state.location.pathname).toBe('/')
+      expect(router.state.location.pathname).toBe('/wallet')
     },
   )
 
@@ -131,7 +131,7 @@ describe('the sign-in screen', () => {
     await screen.findByText('LKR 5.00')
     expect(client.getQueryCache().getAll().length).toBeGreaterThan(0)
 
-    await user.click(screen.getByRole('button', { name: /sign out/i }))
+    await signOut(user)
 
     await screen.findByRole('heading', { name: 'Sign in' })
     expect(client.getQueryCache().getAll()).toHaveLength(0)

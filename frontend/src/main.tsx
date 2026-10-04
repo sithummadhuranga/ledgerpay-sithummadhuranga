@@ -7,9 +7,13 @@ import './index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { z } from 'zod'
 import { Providers } from '@/app/providers'
 import { routes } from '@/app/routes'
 import { makeQueryClient } from '@/lib/queryClient'
+
+// Zod compiles schemas with new Function by default, which our CSP forbids.
+z.config({ jitless: true })
 
 const router = createBrowserRouter(routes)
 const client = makeQueryClient()

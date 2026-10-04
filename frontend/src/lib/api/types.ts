@@ -63,3 +63,83 @@ export interface Page<T> {
   totalCount: number
   totalPages: number
 }
+
+export interface LookupResult {
+  walletNumber: string
+  holderName: string
+  active: boolean
+}
+
+export interface Quote {
+  amount: number
+  fee: number
+  total: number
+}
+
+export interface TransferRequest {
+  recipientWalletNumber?: string
+  recipientPhone?: string
+  amount: string
+  note?: string
+}
+
+export interface TransferReceipt {
+  reference: string
+  amount: number
+  fee: number
+  total: number
+  balanceAfter: number
+  recipientWalletNumber: string
+  createdAt: string
+}
+
+export interface TopUpRequest {
+  walletNumber: string
+  amount: string
+  bankReference: string
+  note?: string
+}
+
+export interface TopUpReceipt {
+  reference: string
+  walletNumber: string
+  amount: number
+  balanceAfter: number
+  bankReference: string
+  createdAt: string
+}
+
+export interface WalletStatusRequest {
+  status: WalletStatus
+  reason: string
+}
+
+export interface WalletStatusReceipt {
+  walletNumber: string
+  status: WalletStatus
+  reason: string
+  changedAt: string
+}
+
+export interface TransactionDetail {
+  reference: string
+  type: TransactionType
+  status: TransactionStatus
+  direction: TransactionDirection | null
+  amount: number
+  fee: number
+  counterpartyName: string | null
+  note: string | null
+  failureCode: string | null
+  createdAt: string
+  senderWalletNumber: string | null
+  receiverWalletNumber: string | null
+  bankReference: string | null
+}
+
+export interface HistoryFilter {
+  page: number
+  pageSize: number
+  from?: string
+  to?: string
+}

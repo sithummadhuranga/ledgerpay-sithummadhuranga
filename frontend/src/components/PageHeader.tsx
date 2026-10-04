@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 
-export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+export function PageHeader({ title, intro, children }: { title: string; intro?: string; children?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2 border-b pb-3">
-      <h1 className="text-xl font-semibold">{title}</h1>
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-semibold sm:text-4xl">{title}</h1>
+        {intro ? <p className="mt-2 max-w-xl text-muted-foreground">{intro}</p> : null}
+      </div>
       {children}
     </div>
   )

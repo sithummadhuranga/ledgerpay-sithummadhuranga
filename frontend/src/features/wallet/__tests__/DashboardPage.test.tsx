@@ -44,7 +44,7 @@ describe('the dashboard', () => {
     await open({ 'GET /wallets/me': json(200, wallet), [recentKey]: page([sent, received, topUp]) })
 
     expect(await screen.findByText('LKR 12,450.00')).toBeInTheDocument()
-    expect(screen.getByText('482915067314', { selector: 'span.text-foreground' })).toBeInTheDocument()
+    expect(screen.getByText('482915067314', { selector: 'span.num' })).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Your last transactions, newest first' })
     expect(within(table).getAllByRole('row')).toHaveLength(4)
     expect(within(table).getByText('Sent to K*** J***')).toBeInTheDocument()
