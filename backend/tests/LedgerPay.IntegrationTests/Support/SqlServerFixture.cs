@@ -24,6 +24,11 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public string ApiConnectionString { get; private set; } = string.Empty;
 
+    // One in-memory API for the whole run, made when a test first asks for it.
+    private ApiFactory? api;
+
+    public ApiFactory Api => api ??= new ApiFactory(ApiConnectionString, TestJwt.Options());
+
     public async ValueTask InitializeAsync()
     {
         await container.StartAsync();
@@ -59,7 +64,15 @@ public sealed class SqlServerFixture : IAsyncLifetime
         await command.ExecuteNonQueryAsync();
     }
 
-    public ValueTask DisposeAsync() => container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (api is not null)
+        {
+            await api.DisposeAsync();
+        }
+
+        await container.DisposeAsync();
+    }
 
     // A database of its own, for tests that change shared settings and would disturb the others.
     public async Task<string> CreateIsolatedDatabaseAsync()

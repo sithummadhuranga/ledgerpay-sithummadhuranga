@@ -24,5 +24,9 @@ public static class ErrorCodes
     public const string ReceiverBalanceLimitExceeded = "RECEIVER_BALANCE_LIMIT_EXCEEDED";
     public const string BalanceLimitExceeded = "BALANCE_LIMIT_EXCEEDED";
     public const string RateLimited = "RATE_LIMITED";
+    public const string NotFound = "NOT_FOUND";
+    public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
+    public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
+    public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
     public const string InternalError = "INTERNAL_ERROR";
 }

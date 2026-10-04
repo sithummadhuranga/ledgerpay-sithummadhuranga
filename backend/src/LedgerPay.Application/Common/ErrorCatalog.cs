@@ -29,6 +29,10 @@ public static class ErrorCatalog
         [ErrorCodes.InsufficientFunds] = new(422, "Balance does not cover the amount and fee"),
         [ErrorCodes.ReceiverBalanceLimitExceeded] = new(422, "The recipient's balance would pass the wallet limit"),
         [ErrorCodes.BalanceLimitExceeded] = new(422, "Balance would pass the wallet limit"),
+        [ErrorCodes.NotFound] = new(404, "Nothing is here"),
+        [ErrorCodes.MethodNotAllowed] = new(405, "That method is not allowed here"),
+        [ErrorCodes.PayloadTooLarge] = new(413, "The request is too large"),
+        [ErrorCodes.UnsupportedMediaType] = new(415, "Send the body as application/json"),
         [ErrorCodes.RateLimited] = new(429, "Too many requests"),
         [ErrorCodes.InternalError] = new(500, "Something went wrong on our side")
     };
