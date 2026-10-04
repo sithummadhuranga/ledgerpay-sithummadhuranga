@@ -1,0 +1,70 @@
+name: deploy
+
+# Every push to develop or main builds the api image and puts it in the GitHub container registry. The step that
+# deploys it to Azure only runs when the repository variable AZURE_DEPLOY is true, so a push is never red because
+# Azure is not set up.
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Work out the image name
+        id: name
+        # The registry wants lower case, and the owner name may have capitals.
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ledgerpay-api" >> "$GITHUB_OUTPUT"
+      - name: Sign in to the registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build the api image
+        run: >
+          docker build backend --target api
+          --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}"
+          --label "org.opencontainers.image.revision=${{ github.sha }}"
+          -t "${{ steps.name.outputs.image }}:${{ github.sha }}"
+          -t "${{ steps.name.outputs.image }}:${{ github.ref_name }}"
+      - name: Push the image
+        run: docker push --all-tags "${{ steps.name.outputs.image }}"
+
+  azure:
+    needs: image
+    if: ${{ vars.AZURE_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      # No password is stored: Azure trusts the token GitHub issues for this run, for this repository and branch.
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          images: ${{ needs.image.outputs.image }}:${{ github.sha }}
+      - name: Wait for the api to answer its health check
+        if: ${{ vars.API_URL != '' }}
+        # A free database that was paused takes about a minute to wake, and the first calls fail until it does.
+        run: |
+          for attempt in $(seq 1 18); do
+            if curl --silent --fail --max-time 20 "${{ vars.API_URL }}/api/v1/health"; then echo; exit 0; fi
+            echo "Not ready yet, attempt $attempt"; sleep 10
+          done
+          echo "The api did not answer its health check in three minutes." >&2
+          exit 1

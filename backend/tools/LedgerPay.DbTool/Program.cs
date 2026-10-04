@@ -44,8 +44,11 @@ try
     if (command is "setup" or "permissions")
     {
         var apiUser = builder.Configuration["Database:ApiUser"] ?? "ledgerpay_api";
-        await DatabasePermissions.ApplyAsync(db, apiUser, CancellationToken.None);
-        Console.WriteLine($"Permissions applied for {apiUser}.");
+
+        // Set only for Azure SQL, where the user is made inside the database with this password.
+        var apiPassword = builder.Configuration["Database:ApiUserPassword"];
+        await DatabasePermissions.ApplyAsync(db, apiUser, CancellationToken.None, string.IsNullOrEmpty(apiPassword) ? null : apiPassword);
+        Console.WriteLine($"Permissions applied for {apiUser}{(string.IsNullOrEmpty(apiPassword) ? "" : " as a user of the database")}.");
     }
 
     if (command is "setup" or "seed")
