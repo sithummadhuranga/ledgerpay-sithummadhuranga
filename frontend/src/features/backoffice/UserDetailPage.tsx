@@ -21,7 +21,7 @@ export function UserDetailPage() {
 
   if (person.isPending) {
     return (
-      <div aria-busy="true" aria-label="Loading the customer" className="grid max-w-xl gap-3">
+      <div role="status" aria-busy="true" aria-label="Loading the customer" className="grid max-w-xl gap-3">
         <Skeleton className="h-10 w-2/3" />
         <Skeleton className="h-40 w-full" />
       </div>

@@ -86,6 +86,22 @@ describe('the audit log', () => {
     expect(router.state.location.search).toBe('?page=2')
   })
 
+  it('offers the last page when the address asks for one past the end', async () => {
+    const { user } = await openAs(
+      adminLogin,
+      {
+        [list('page=9&pageSize=20')]: json(200, page([], 20, { page: 9, totalCount: 45, totalPages: 3 })),
+        [list('page=3&pageSize=20')]: json(200, page([entry()], 20, { page: 3, totalCount: 45, totalPages: 3 })),
+      },
+      '/backoffice/audit?page=9',
+    )
+    expect(await screen.findByText(/That page does not exist. There are 3 pages./)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Go to the last page' }))
+
+    expect(await screen.findByText('Page 3 of 3. 45 entries.')).toBeInTheDocument()
+  })
+
   it('shows the empty state and the error state', async () => {
     const empty = await openAs(adminLogin, { [list('page=1&pageSize=20&action=Logout')]: json(200, page([], 20)) }, '/backoffice/audit?action=Logout')
     expect(await screen.findByText('No entry matches those filters.')).toBeInTheDocument()

@@ -24,7 +24,7 @@ export function StaffPage() {
         intro="A restricted operator cannot sign in, every session of theirs ends at once and the token they hold stops working. The reason stays in the audit log."
       />
       {staff.isPending ? (
-        <div aria-busy="true" aria-label="Loading the staff" className="grid gap-2">
+        <div role="status" aria-busy="true" aria-label="Loading the staff" className="grid gap-2">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>

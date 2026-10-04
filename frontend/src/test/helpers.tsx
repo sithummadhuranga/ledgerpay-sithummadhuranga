@@ -5,6 +5,7 @@ import { vi } from 'vitest'
 import { Providers } from '@/app/providers'
 import { routes as appRoutes } from '@/app/routes'
 import { tokenStore } from '@/lib/api/token'
+import { daysAgoUtc } from '@/lib/dates'
 import { makeQueryClient } from '@/lib/queryClient'
 import type { LoginResponse } from '@/lib/api/types'
 
@@ -81,7 +82,7 @@ export const emptyList = { items: [], page: 1, pageSize: 5, totalCount: 0, total
 export const overviewReplies = {
   'GET /admin/users?page=1&pageSize=5&status=Frozen': json(200, emptyList),
   'GET /admin/users?page=1&pageSize=5&status=Locked': json(200, emptyList),
-  'GET /admin/transactions?page=1&pageSize=5&type=Transfer&status=Failed': json(200, emptyList),
+  [`GET /admin/transactions?page=1&pageSize=5&type=Transfer&status=Failed&from=${daysAgoUtc(7)}`]: json(200, emptyList),
 }
 
 export const emptyPage = { items: [], page: 1, pageSize: 5, totalCount: 0, totalPages: 0 }

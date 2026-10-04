@@ -44,6 +44,24 @@ public class IndexTests(SqlServerFixture sql)
     }
 
     [Theory]
+    [InlineData("Transactions", "IX_Transactions_CreatedAt", "CreatedAt")]
+    [InlineData("AuditLogs", "IX_AuditLogs_Action_CreatedAt", "CreatedAt")]
+    public async Task The_newest_first_lists_are_indexed_newest_first(string table, string index, string column)
+    {
+        await using var db = sql.NewContext();
+
+        var descending = await db.Database.SqlQuery<bool>($"""
+            SELECT ic.is_descending_key AS [Value]
+            FROM sys.indexes AS i
+            INNER JOIN sys.index_columns AS ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+            INNER JOIN sys.columns AS c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+            WHERE i.object_id = OBJECT_ID({"dbo." + table}) AND i.name = {index} AND c.name = {column}
+            """).SingleAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(descending);
+    }
+
+    [Theory]
     [InlineData("IX_RefreshTokens_TokenHash", true, new[] { "TokenHash" })]
     [InlineData("IX_RefreshTokens_FamilyId_UserId", false, new[] { "FamilyId", "UserId" })]
     [InlineData("IX_RefreshTokens_UserId", false, new[] { "UserId" })]

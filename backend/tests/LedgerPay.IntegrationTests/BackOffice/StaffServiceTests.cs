@@ -131,12 +131,15 @@ public class StaffServiceTests(SqlServerFixture sql)
 
         await using var db = sql.NewContext();
         var entries = await db.AuditLogs.AsNoTracking()
-            .Where(log => log.EntityReference == target.Id.ToString()).OrderBy(log => log.CreatedAt).ToListAsync(TestContext.Current.CancellationToken);
+            .Where(log => log.ActorUserId == admin && log.Details!.StartsWith(target.FullName + ":"))
+            .OrderBy(log => log.CreatedAt).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Equal([AuditActions.AccountRestricted, AuditActions.AccountRestrictionLifted], entries.Select(entry => entry.Action).ToArray());
         Assert.All(entries, entry => Assert.Equal((admin, AuditEntityTypes.User, "203.0.113.90", "corr-staff-test"), (entry.ActorUserId!.Value, entry.EntityType, entry.IpAddress, entry.CorrelationId)));
         Assert.EndsWith("Suspected misuse", entries[0].Details);
         Assert.EndsWith("Cleared after review", entries[1].Details);
         Assert.DoesNotContain(target.Email, entries[0].Details!);
+        Assert.All(entries, entry => Assert.Null(entry.EntityReference));
+        Assert.DoesNotContain(target.Id.ToString(), entries[0].Details!);
     }
 
     [Fact]
@@ -224,7 +227,83 @@ public class StaffServiceTests(SqlServerFixture sql)
         Assert.Equal(1, results.Count(result => result.Succeeded));
         Assert.All(results.Where(result => !result.Succeeded), result => Assert.Equal(ErrorCodes.AccountAlreadyInState, result.ErrorCode));
         await using var db = sql.NewContext();
-        Assert.Equal(1, await db.AuditLogs.CountAsync(log => log.EntityReference == target.Id.ToString() && log.Action == AuditActions.AccountRestricted, TestContext.Current.CancellationToken));
+        Assert.Equal(1, await db.AuditLogs.CountAsync(log => log.Details!.StartsWith(target.FullName + ":") && log.Action == AuditActions.AccountRestricted, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_refresh_and_a_restriction_of_the_same_account_take_turns_on_the_user_row()
+    {
+        var target = await NewOperatorAsync();
+        var clock = TimeProvider.System;
+        string token;
+        await using (var db = sql.NewContext())
+        {
+            token = (await TestServices.Auth(db, clock).LoginAsync(new LoginRequest(target.Email, Password), Caller, CancellationToken.None)).Value!.Refresh.Token;
+        }
+
+        await using var holder = sql.NewContext();
+        await using var refreshing = sql.NewContext();
+        Task<ServiceResult<Refreshed>> refresh;
+        await using (var transaction = await holder.Database.BeginTransactionAsync(TestContext.Current.CancellationToken))
+        {
+            await holder.LockUserAsync(target.Id, TestContext.Current.CancellationToken);
+            refresh = TestServices.Sessions(refreshing, clock).RefreshAsync(token, Caller, CancellationToken.None);
+            await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+            Assert.False(refresh.IsCompleted, "The refresh did not wait for the user row.");
+        }
+
+        Assert.True((await refresh).Succeeded);
+    }
+
+    [Fact]
+    public async Task A_refresh_and_a_restriction_at_once_never_leave_a_live_session_behind()
+    {
+        var admin = await AdminIdAsync();
+        foreach (var _ in Enumerable.Range(0, 8))
+        {
+            var target = await NewOperatorAsync();
+            string token;
+            await using (var db = sql.NewContext())
+            {
+                token = (await TestServices.Auth(db).LoginAsync(new LoginRequest(target.Email, Password), Caller, CancellationToken.None)).Value!.Refresh.Token;
+            }
+
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    await using var db = sql.NewContext();
+                    await TestServices.Sessions(db).RefreshAsync(token, Caller, CancellationToken.None);
+                }, TestContext.Current.CancellationToken),
+                SetAsync(admin, target.Email, true));
+
+            await using var check = sql.NewContext();
+            Assert.Empty(await check.RefreshTokens.AsNoTracking().Where(row => row.UserId == target.Id && row.RevokedAt == null).ToListAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
+    public async Task A_token_replaced_a_moment_ago_does_not_get_an_access_token_for_a_restricted_account()
+    {
+        var target = await NewOperatorAsync();
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow);
+        string first;
+        await using (var db = sql.NewContext())
+        {
+            first = (await TestServices.Auth(db, clock).LoginAsync(new LoginRequest(target.Email, Password), Caller, CancellationToken.None)).Value!.Refresh.Token;
+        }
+
+        await using (var db = sql.NewContext())
+        {
+            await TestServices.Sessions(db, clock).RefreshAsync(first, Caller, CancellationToken.None);
+        }
+
+        await SetAsync(await AdminIdAsync(), target.Email, true, clock: clock);
+        clock.Advance(TimeSpan.FromSeconds(2));
+
+        await using var check = sql.NewContext();
+        var result = await TestServices.Sessions(check, clock).RefreshAsync(first, Caller, CancellationToken.None);
+
+        Assert.Equal(ErrorCodes.InvalidRefreshToken, result.ErrorCode);
     }
 
     // ---- what a restriction does to sign-in

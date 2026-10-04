@@ -133,6 +133,23 @@ describe('the transactions page', () => {
     expect(router.state.location.search).toBe('?page=2')
   })
 
+  it('offers the last page when the address asks for one past the end', async () => {
+    const { user, router } = await openAs(
+      operatorLogin,
+      {
+        [list('page=7&pageSize=10')]: json(200, page([], 10, { page: 7, totalCount: 12, totalPages: 2 })),
+        [list('page=2&pageSize=10')]: json(200, page([refused], 10, { page: 2, totalCount: 12, totalPages: 2 })),
+      },
+      '/backoffice/transactions?page=7',
+    )
+    expect(await screen.findByText(/That page does not exist. There are 2 pages./)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Go to the last page' }))
+
+    expect(await screen.findByText('Page 2 of 2. 12 transactions.')).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?page=2')
+  })
+
   it('shows the empty state and the error state', async () => {
     const empty = await openAs(operatorLogin, { [list('page=1&pageSize=10&status=Failed')]: json(200, page([])) }, '/backoffice/transactions?status=Failed')
     expect(await screen.findByText('No transaction matches those filters.')).toBeInTheDocument()

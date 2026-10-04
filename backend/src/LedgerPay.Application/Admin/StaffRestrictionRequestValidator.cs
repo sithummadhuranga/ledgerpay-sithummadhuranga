@@ -7,7 +7,8 @@ public sealed class StaffRestrictionRequestValidator : AbstractValidator<StaffRe
 {
     public StaffRestrictionRequestValidator()
     {
-        RuleFor(request => request.Email).EmailAddress();
+        // Stops at the first failure, so a missing email is not then trimmed by the next rule.
+        RuleFor(request => request.Email).Cascade(CascadeMode.Stop).EmailAddress();
         RuleFor(request => request.Restricted).NotNull().WithMessage("Say whether the account is restricted.");
 
         // Counted without the spaces around the text, because the service stores the trimmed reason.

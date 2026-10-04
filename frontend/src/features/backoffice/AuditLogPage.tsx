@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { PageHeader } from '@/components/PageHeader'
-import { Pager } from '@/components/Pager'
+import { BeyondLastPage, Pager } from '@/components/Pager'
 import { SelectField } from '@/components/SelectField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,13 +59,15 @@ export function AuditLogPage() {
       <Filters key={JSON.stringify(draft)} initial={draft} onApply={(next) => go(next)} onClear={() => setParams(new URLSearchParams())} filtered={Object.values(draft).some(Boolean)} />
 
       {audit.isPending ? (
-        <div aria-busy="true" aria-label="Loading the audit log" className="grid gap-2">
+        <div role="status" aria-busy="true" aria-label="Loading the audit log" className="grid gap-2">
           {Array.from({ length: 6 }, (_, index) => (
             <Skeleton key={index} className="h-12 w-full" />
           ))}
         </div>
       ) : audit.isError ? (
         <ErrorState message={`We could not load the audit log. ${describeError(audit.error)}`} onRetry={() => void audit.refetch()} />
+      ) : audit.data.items.length === 0 && page > 1 && audit.data.totalPages > 0 ? (
+        <BeyondLastPage totalPages={audit.data.totalPages} onLast={() => go(draft, audit.data.totalPages)} />
       ) : audit.data.items.length === 0 ? (
         <EmptyState>No entry matches those filters.</EmptyState>
       ) : (

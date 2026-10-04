@@ -15,7 +15,8 @@ describe('the customers page', () => {
     const [first, second] = await rows()
 
     expect(within(first!).getByRole('link', { name: 'Nimali Perera' })).toHaveAttribute('href', '/backoffice/users/482915067314')
-    expect(within(first!).getByText(/nimali.perera@example.com/)).toBeInTheDocument()
+    expect(within(first!).getByText(/n\*\*\*@example.com/)).toBeInTheDocument()
+    expect(within(first!).queryByText(/nimali.perera/)).not.toBeInTheDocument()
     expect(within(first!).getByText('LKR 12,450.00')).toBeInTheDocument()
     expect(within(first!).getByText('Active')).toBeInTheDocument()
     expect(within(second!).getByText('Frozen, Locked')).toBeInTheDocument()
@@ -74,6 +75,23 @@ describe('the customers page', () => {
 
     expect(await screen.findByText('Page 2 of 3. 25 customers.')).toBeInTheDocument()
     expect(router.state.location.search).toBe('?page=2')
+  })
+
+  it('offers the last page when the address asks for one past the end', async () => {
+    const { user, router } = await openAs(
+      operatorLogin,
+      {
+        [list('page=9&pageSize=10')]: json(200, page([], 10, { page: 9, totalCount: 25, totalPages: 3 })),
+        [list('page=3&pageSize=10')]: json(200, page([kasun], 10, { page: 3, totalCount: 25, totalPages: 3 })),
+      },
+      '/backoffice/users?page=9',
+    )
+    expect(await screen.findByText(/That page does not exist. There are 3 pages./)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Go to the last page' }))
+
+    expect(await screen.findByText('Page 3 of 3. 25 customers.')).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?page=3')
   })
 
   it('says so when nobody matches', async () => {

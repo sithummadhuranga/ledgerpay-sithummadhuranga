@@ -2,12 +2,16 @@ import { Link } from 'react-router-dom'
 import { ErrorState } from '@/components/ErrorState'
 import { PageHeader } from '@/components/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
+import { daysAgoUtc } from '@/lib/dates'
 import { describeError } from '@/lib/errors'
 import { formatMoney } from '@/lib/format'
 import { StaffTransactionList, UserFlags } from './parts'
 import { useStaffTransactions, useUsers } from './queries'
 
 const SHOWN = 5
+
+// Refused transfers are counted for the last week, so the list can be empty again and is not all there ever was.
+const DAYS = 7
 
 function Section({ title, count, seeAll, children }: { title: string; count: number | null; seeAll: string; children: React.ReactNode }) {
   return (
@@ -27,7 +31,7 @@ function Section({ title, count, seeAll, children }: { title: string; count: num
 }
 
 const Loading = ({ label }: { label: string }) => (
-  <div aria-busy="true" aria-label={label} className="grid gap-2">
+  <div role="status" aria-busy="true" aria-label={label} className="grid gap-2">
     <Skeleton className="h-14 w-full" />
     <Skeleton className="h-14 w-full" />
   </div>
@@ -37,11 +41,12 @@ const Loading = ({ label }: { label: string }) => (
 export function BackOfficePage() {
   const frozen = useUsers({ page: 1, pageSize: SHOWN, status: 'Frozen' })
   const locked = useUsers({ page: 1, pageSize: SHOWN, status: 'Locked' })
-  const failed = useStaffTransactions({ page: 1, pageSize: SHOWN, type: 'Transfer', status: 'Failed' })
+  const since = daysAgoUtc(DAYS)
+  const failed = useStaffTransactions({ page: 1, pageSize: SHOWN, type: 'Transfer', status: 'Failed', from: since })
 
   return (
     <>
-      <PageHeader title="Needs attention" intro="Frozen wallets, locked accounts and transfers that were refused, newest first. Open one to look closer." />
+      <PageHeader title="Needs attention" intro="Frozen wallets, locked accounts and the transfers refused in the last 7 days, newest first. Open one to look closer." />
       <div className="grid gap-12">
         <Section title="Frozen wallets" count={frozen.data?.totalCount ?? null} seeAll="/backoffice/users?status=Frozen">
           {frozen.isPending ? (
@@ -67,13 +72,13 @@ export function BackOfficePage() {
           )}
         </Section>
 
-        <Section title="Refused transfers" count={failed.data?.totalCount ?? null} seeAll="/backoffice/transactions?type=Transfer&status=Failed">
+        <Section title="Refused transfers" count={failed.data?.totalCount ?? null} seeAll={`/backoffice/transactions?type=Transfer&status=Failed&from=${since}`}>
           {failed.isPending ? (
             <Loading label="Loading refused transfers" />
           ) : failed.isError ? (
             <ErrorState message={`We could not load this. ${describeError(failed.error)}`} onRetry={() => void failed.refetch()} />
           ) : failed.data.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No transfer has been refused.</p>
+            <p className="text-sm text-muted-foreground">No transfer has been refused in the last 7 days.</p>
           ) : (
             <StaffTransactionList items={failed.data.items} label="Refused transfers" />
           )}

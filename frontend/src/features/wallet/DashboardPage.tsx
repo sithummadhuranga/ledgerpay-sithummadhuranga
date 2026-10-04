@@ -22,7 +22,7 @@ export function DashboardPage() {
     <div className="grid gap-10">
       <section aria-label="Balance">
         {wallet.isPending ? (
-          <div aria-busy="true" aria-label="Loading your balance" className="rounded-xl bg-panel p-6 sm:p-8">
+          <div role="status" aria-busy="true" aria-label="Loading your balance" className="rounded-xl bg-panel p-6 sm:p-8">
             <Skeleton className="mb-3 h-4 w-24 bg-panel-border" />
             <Skeleton className="h-12 w-72 max-w-full bg-panel-border" />
             <Skeleton className="mt-6 h-4 w-56 bg-panel-border" />
@@ -69,7 +69,7 @@ export function DashboardPage() {
           </Link>
         </div>
         {recent.isPending ? (
-          <div aria-busy="true" aria-label="Loading your transactions" className="grid gap-2">
+          <div role="status" aria-busy="true" aria-label="Loading your transactions" className="grid gap-2">
             {Array.from({ length: RECENT_COUNT }, (_, index) => (
               <Skeleton key={index} className="h-14 w-full" />
             ))}

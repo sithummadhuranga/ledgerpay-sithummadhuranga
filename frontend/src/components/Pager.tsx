@@ -9,6 +9,18 @@ interface Props {
   onPage: (page: number) => void
 }
 
+// What a list shows when the address asks for a page after the last one, for example after a filter made the list shorter.
+export function BeyondLastPage({ totalPages, onLast }: { totalPages: number; onLast: () => void }) {
+  return (
+    <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+      <p>That page does not exist. There {totalPages === 1 ? 'is 1 page' : `are ${totalPages} pages`}.</p>
+      <Button variant="outline" className="mt-4" onClick={onLast}>
+        Go to the last page
+      </Button>
+    </div>
+  )
+}
+
 // Previous and Next with where you are, for every list of the back office.
 export function Pager({ page, totalPages, totalCount, noun, onPage }: Props) {
   return (

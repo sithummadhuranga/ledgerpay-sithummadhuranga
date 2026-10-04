@@ -98,7 +98,7 @@ public sealed class StaffService(IAppDbContext db, TimeProvider clock) : IStaffS
 
         db.AuditLogs.Add(AuditEntry.Create(
             restrict ? AuditActions.AccountRestricted : AuditActions.AccountRestrictionLifted,
-            AuditEntityTypes.User, user.Id.ToString(), $"{user.FullName}: {reason}", actorUserId, info, now));
+            AuditEntityTypes.User, null, $"{user.FullName}: {reason}", actorUserId, info, now));
         await db.SaveChangesAsync(cancellationToken);
 
         var actorName = restrict

@@ -89,7 +89,10 @@ public class BackOfficeQueriesTests(SqlServerFixture sql)
 
         var summary = Assert.Single((await SearchAsync(new UserSearchQuery { Search = word })).Items);
 
-        Assert.Equal(($"Nimali {word}", user.Email, user.Phone, 0m), (summary.FullName, summary.Email, summary.Phone, summary.Balance));
+        Assert.Equal(($"Nimali {word}", LedgerPay.Domain.Rules.ContactMask.Email(user.Email), LedgerPay.Domain.Rules.ContactMask.Phone(user.Phone), 0m),
+            (summary.FullName, summary.Email, summary.Phone, summary.Balance));
+        Assert.DoesNotContain(user.Email, summary.Email);
+        Assert.DoesNotContain(user.Phone, summary.Phone);
         Assert.Equal(WalletStatus.Active, summary.WalletStatus);
         Assert.False(summary.Locked);
         Assert.Equal(DateTimeKind.Utc, summary.CreatedAt.Kind);
@@ -280,6 +283,39 @@ public class BackOfficeQueriesTests(SqlServerFixture sql)
         Assert.Equal(AuditEntityTypes.Wallet, entry.EntityType);
         Assert.Equal("203.0.113.80", entry.IpAddress);
         Assert.Equal("corr-backoffice-test", entry.CorrelationId);
+    }
+
+    [Fact]
+    public async Task The_same_person_opened_again_inside_five_minutes_is_one_entry_and_after_that_a_new_one()
+    {
+        var (_, wallet, _) = await NewPersonAsync();
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var db = sql.NewContext();
+        var actor = await db.Users.Where(candidate => candidate.Email == SeedData.OperatorEmail).Select(candidate => candidate.Id).SingleAsync(TestContext.Current.CancellationToken);
+        var other = await db.Users.Where(candidate => candidate.Email == SeedData.AdminEmail).Select(candidate => candidate.Id).SingleAsync(TestContext.Current.CancellationToken);
+
+        async Task LookAsync(Guid by)
+        {
+            await using var each = sql.NewContext();
+            await TestServices.BackOffice(each, clock).GetUserAsync(by, wallet.WalletNumber, Caller, CancellationToken.None);
+        }
+
+        async Task<int> CountAsync(Guid by)
+        {
+            await using var check = sql.NewContext();
+            return await check.AuditLogs.CountAsync(log => log.ActorUserId == by && log.Action == AuditActions.UserViewed && log.EntityReference == wallet.WalletNumber, TestContext.Current.CancellationToken);
+        }
+
+        await LookAsync(actor);
+        clock.Advance(TimeSpan.FromMinutes(4));
+        await LookAsync(actor);
+        await LookAsync(other);
+        Assert.Equal((1, 1), (await CountAsync(actor), await CountAsync(other)));
+
+        clock.Advance(TimeSpan.FromMinutes(2));
+        await LookAsync(actor);
+
+        Assert.Equal(2, await CountAsync(actor));
     }
 
     [Fact]

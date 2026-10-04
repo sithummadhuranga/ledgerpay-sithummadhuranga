@@ -4,6 +4,7 @@ using LedgerPay.Application.Transactions;
 using LedgerPay.Domain.Constants;
 using LedgerPay.Domain.Entities;
 using LedgerPay.Domain.Enums;
+using LedgerPay.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace LedgerPay.Application.BackOffice;
@@ -13,6 +14,9 @@ public sealed class BackOfficeQueries(IAppDbContext db, TimeProvider clock) : IB
     // A person's page shows the latest few, and the transactions list is where the rest are.
     private const int RecentCount = 10;
 
+    // The same person opened again by the same staff member inside this time is written once.
+    private static readonly TimeSpan ViewedWindow = TimeSpan.FromMinutes(5);
+
     public async Task<PagedResponse<UserSummary>> ListUsersAsync(UserSearchQuery query, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow().UtcDateTime;
@@ -20,7 +24,7 @@ public sealed class BackOfficeQueries(IAppDbContext db, TimeProvider clock) : IB
 
         if (query.Search?.Trim() is { Length: > 0 } term)
         {
-            // Contains is sent as a parameter, so a percent sign or an underscore in the text is only text.
+            // Contains is sent as a parameter, so a wildcard character in the text is only text.
             wallets = wallets.Where(wallet =>
                 wallet.WalletNumber.Contains(term) || wallet.User.FullName.Contains(term) ||
                 wallet.User.Email.Contains(term) || wallet.User.Phone.Contains(term));
@@ -47,7 +51,8 @@ public sealed class BackOfficeQueries(IAppDbContext db, TimeProvider clock) : IB
             .ToListAsync(cancellationToken);
 
         var items = rows
-            .Select(row => new UserSummary(row.WalletNumber, row.FullName, row.Email, row.Phone, row.Balance, row.Status, row.Locked, Utc(row.CreatedAt)))
+            .Select(row => new UserSummary(
+                row.WalletNumber, row.FullName, ContactMask.Email(row.Email), ContactMask.Phone(row.Phone), row.Balance, row.Status, row.Locked, Utc(row.CreatedAt)))
             .ToList();
         return PagedResponse.Create(items, query.Page, query.PageSize, totalCount);
     }
@@ -79,9 +84,18 @@ public sealed class BackOfficeQueries(IAppDbContext db, TimeProvider clock) : IB
             .Take(RecentCount)
             .ToListAsync(cancellationToken);
 
-        db.AuditLogs.Add(AuditEntry.Create(
-            AuditActions.UserViewed, AuditEntityTypes.Wallet, found.WalletNumber, null, actorUserId, info, now));
-        await db.SaveChangesAsync(cancellationToken);
+        // A page that loads again a moment later, after a freeze for example, is the same look and not a new one.
+        var since = now - ViewedWindow;
+        var alreadyLooked = await db.AuditLogs.AsNoTracking().AnyAsync(
+            log => log.ActorUserId == actorUserId && log.Action == AuditActions.UserViewed &&
+                   log.EntityReference == found.WalletNumber && log.CreatedAt > since,
+            cancellationToken);
+        if (!alreadyLooked)
+        {
+            db.AuditLogs.Add(AuditEntry.Create(
+                AuditActions.UserViewed, AuditEntityTypes.Wallet, found.WalletNumber, null, actorUserId, info, now));
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         var locked = found.LockoutEnd > now;
         return ServiceResult<UserDetail>.Ok(new UserDetail(

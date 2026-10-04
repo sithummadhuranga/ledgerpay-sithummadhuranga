@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { PageHeader } from '@/components/PageHeader'
-import { Pager } from '@/components/Pager'
+import { BeyondLastPage, Pager } from '@/components/Pager'
 import { SelectField } from '@/components/SelectField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,13 +42,15 @@ export function UsersPage() {
       <SearchForm key={`${search}|${status ?? ''}`} initial={{ q: search, status: status ?? '' }} onSubmit={(next) => go(next)} />
 
       {users.isPending ? (
-        <div aria-busy="true" aria-label="Loading customers" className="grid gap-2">
+        <div role="status" aria-busy="true" aria-label="Loading customers" className="grid gap-2">
           {Array.from({ length: 5 }, (_, index) => (
             <Skeleton key={index} className="h-16 w-full" />
           ))}
         </div>
       ) : users.isError ? (
         <ErrorState message={`We could not load the customers. ${describeError(users.error)}`} onRetry={() => void users.refetch()} />
+      ) : users.data.items.length === 0 && page > 1 && users.data.totalPages > 0 ? (
+        <BeyondLastPage totalPages={users.data.totalPages} onLast={() => go({ q: search, status: status ?? '' }, users.data.totalPages)} />
       ) : users.data.items.length === 0 ? (
         <EmptyState>{search || status ? 'No customer matches that.' : 'There are no customers yet.'}</EmptyState>
       ) : (

@@ -90,7 +90,7 @@ export function HistoryPage() {
       <DateFilter key={`${from}|${to}`} from={from} to={to} onApply={apply} />
 
       {history.isPending ? (
-        <div aria-busy="true" aria-label="Loading your transactions" className="grid gap-2">
+        <div role="status" aria-busy="true" aria-label="Loading your transactions" className="grid gap-2">
           {Array.from({ length: 6 }, (_, index) => (
             <Skeleton key={index} className="h-14 w-full" />
           ))}

@@ -1,12 +1,13 @@
 import type { AuditEntry, StaffMember, StaffTransaction, UserDetail, UserSummary } from '@/lib/api/types'
 
 // People and money for the back-office tests.
+// As the list shows them, with the contact details cut down. The page of one customer has them whole.
 export const nimali: UserSummary = {
-  walletNumber: '482915067314', fullName: 'Nimali Perera', email: 'nimali.perera@example.com', phone: '+94771284635',
+  walletNumber: '482915067314', fullName: 'Nimali Perera', email: 'n***@example.com', phone: '+9477***4635',
   balance: 12450, walletStatus: 'Active', locked: false, createdAt: '2026-10-02T10:00:00Z',
 }
 export const kasun: UserSummary = {
-  walletNumber: '909566829850', fullName: 'Kasun Jayawardena', email: 'kasun.jayawardena@example.com', phone: '+94712390581',
+  walletNumber: '909566829850', fullName: 'Kasun Jayawardena', email: 'k***@example.com', phone: '+9471***0581',
   balance: 300, walletStatus: 'Frozen', locked: true, createdAt: '2026-10-02T11:00:00Z',
 }
 
@@ -24,11 +25,11 @@ export const topUp: StaffTransaction = {
 }
 
 export const detail: UserDetail = {
-  ...nimali, statusReason: null, statusChangedAt: null, statusChangedBy: null, lockedUntil: null, failedLoginCount: 0,
+  ...nimali, email: 'nimali.perera@example.com', phone: '+94771284635', statusReason: null, statusChangedAt: null, statusChangedBy: null, lockedUntil: null, failedLoginCount: 0,
   recentTransactions: [transfer, topUp],
 }
 export const frozenDetail: UserDetail = {
-  ...kasun, statusReason: 'Reported lost phone', statusChangedAt: '2026-10-04T08:00:00Z', statusChangedBy: 'Dilani Senanayake',
+  ...kasun, email: 'kasun.jayawardena@example.com', phone: '+94712390581', statusReason: 'Reported lost phone', statusChangedAt: '2026-10-04T08:00:00Z', statusChangedBy: 'Dilani Senanayake',
   lockedUntil: '2026-10-04T10:30:00Z', failedLoginCount: 5, recentTransactions: [],
 }
 

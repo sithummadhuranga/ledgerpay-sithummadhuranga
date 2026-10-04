@@ -356,6 +356,8 @@ public class BackOfficeEndpointsTests(SqlServerFixture sql)
         var noFlag = await RestrictAsync(client, admin, email, null);
         var shortReason = await RestrictAsync(client, admin, email, false, "no");
         var badEmail = await RestrictAsync(client, admin, "not-an-email", true);
+        var nullEmail = await ApiCalls.SendAsync(client, HttpMethod.Patch, "/api/v1/admin/staff/restriction", admin, new { email = (string?)null, restricted = true, reason = "Left the company" });
+        var noBody = await ApiCalls.SendAsync(client, HttpMethod.Patch, "/api/v1/admin/staff/restriction", admin, new { });
 
         Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.AccountAlreadyInState), (twice.StatusCode, await CodeAsync(twice)));
         Assert.Equal((HttpStatusCode.UnprocessableEntity, ErrorCodes.StaffNotRestrictable), (ofAdmin.StatusCode, await CodeAsync(ofAdmin)));
@@ -364,6 +366,47 @@ public class BackOfficeEndpointsTests(SqlServerFixture sql)
         Assert.Equal(HttpStatusCode.BadRequest, noFlag.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, shortReason.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, badEmail.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, nullEmail.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, noBody.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_list_of_customers_shows_masked_contact_details_and_the_page_of_one_shows_them_whole()
+    {
+        var client = Client();
+        var customer = await ApiCalls.NewCustomerAsync(client);
+        var token = await ApiCalls.OperatorTokenAsync(client);
+
+        var list = await ApiCalls.GetAsync(client, $"/api/v1/admin/users?search={customer.WalletNumber}", token);
+        var one = await ApiCalls.GetAsync(client, $"/api/v1/admin/users/{customer.WalletNumber}", token);
+
+        using var listBody = await ApiCalls.ReadAsync(list);
+        using var oneBody = await ApiCalls.ReadAsync(one);
+        var row = listBody.RootElement.GetProperty("items")[0];
+        Assert.NotEqual(customer.Email, row.GetProperty("email").GetString());
+        Assert.Contains("***", row.GetProperty("email").GetString());
+        Assert.Contains("***", row.GetProperty("phone").GetString());
+        Assert.DoesNotContain(customer.Email, await list.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(customer.Email, oneBody.RootElement.GetProperty("email").GetString());
+        Assert.Equal(customer.Phone, oneBody.RootElement.GetProperty("phone").GetString());
+    }
+
+    [Fact]
+    public async Task The_audit_log_shows_no_internal_id_for_a_restriction()
+    {
+        var client = Client();
+        var (email, _) = await NewOperatorAsync();
+        var admin = await ApiCalls.AdminTokenAsync(client);
+        await RestrictAsync(client, admin, email, true, "Suspected misuse");
+
+        var response = await ApiCalls.GetAsync(client, "/api/v1/admin/audit-logs?action=AccountRestricted&pageSize=5", admin);
+
+        var text = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Suspected misuse", text);
+        using var body = JsonDocument.Parse(text);
+        var item = body.RootElement.GetProperty("items")[0];
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("entityReference").ValueKind);
+        Assert.DoesNotMatch("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", text);
     }
 
     // ---- limits

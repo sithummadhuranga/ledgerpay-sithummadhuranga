@@ -117,6 +117,15 @@ public class StaffRestrictionRequestValidatorTests
         Assert.False(validator.Validate(Request(restricted: null)).IsValid);
     }
 
+    [Fact]
+    public void A_missing_email_is_refused_and_does_not_crash_the_validator()
+    {
+        var result = validator.Validate(new StaffRestrictionRequest { Email = null!, Restricted = true, Reason = "Left the company" });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(StaffRestrictionRequest.Email));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("not-an-email")]
