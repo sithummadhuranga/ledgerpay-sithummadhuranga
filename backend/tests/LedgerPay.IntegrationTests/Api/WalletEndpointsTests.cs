@@ -124,14 +124,14 @@ public class WalletEndpointsTests(SqlServerFixture sql)
     {
         var client = Client();
         var asker = await ApiCalls.NewCustomerAsync(client);
-        var target = await ApiCalls.NewCustomerAsync(client, 750m);
+        var target = await ApiCalls.NewCustomerAsync(client, 612.45m);
 
         var response = await ApiCalls.GetAsync(client, $"/api/v1/wallets/lookup?walletNumber={target.WalletNumber}", asker.Token);
 
         var text = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain(target.Email, text);
         Assert.DoesNotContain(target.Phone, text);
-        Assert.DoesNotContain("750", text);
+        Assert.DoesNotContain("612.45", text);
         Assert.DoesNotContain("Nimali", text);
         Assert.DoesNotContain("Perera", text);
     }

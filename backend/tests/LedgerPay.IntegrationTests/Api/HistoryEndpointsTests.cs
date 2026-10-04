@@ -160,6 +160,20 @@ public class HistoryEndpointsTests(SqlServerFixture sql)
         return body.RootElement.GetProperty("totalCount").GetInt32();
     }
 
+    [Theory]
+    [InlineData("to=9999-12-31")]
+    [InlineData("from=0001-01-01")]
+    [InlineData("from=0001-01-01&to=9999-12-31")]
+    public async Task The_largest_and_smallest_dates_answer_200_and_not_500(string query)
+    {
+        var client = Client();
+        var customer = await ApiCalls.NewCustomerAsync(client, 300m);
+
+        var response = await ApiCalls.GetAsync(client, $"{Url}?{query}", customer.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task A_customer_never_sees_another_customers_entries()
     {

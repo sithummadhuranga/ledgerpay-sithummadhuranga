@@ -166,6 +166,36 @@ public class HistoryServiceTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task The_last_instant_of_the_to_day_is_included_and_the_first_of_the_next_day_is_not()
+    {
+        var customer = await CustomerAsync();
+        var lastInstant = new FakeTimeProvider(new DateTimeOffset(2026, 9, 2, 23, 59, 59, TimeSpan.Zero).AddTicks(9_999_999));
+        var nextDay = new FakeTimeProvider(new DateTimeOffset(2026, 9, 3, 0, 0, 0, TimeSpan.Zero));
+        await TopUpAsync(customer, 100m, lastInstant);
+        await TopUpAsync(customer, 200m, nextDay);
+
+        var history = await HistoryAsync(customer, new HistoryQuery { To = new DateOnly(2026, 9, 2) });
+
+        Assert.Equal([100m], history.Items.Select(item => item.Amount));
+    }
+
+    [Theory]
+    [InlineData(9999, 12, 31)]
+    [InlineData(1, 1, 1)]
+    public async Task The_largest_and_smallest_dates_are_valid_filters_and_do_not_crash(int year, int month, int day)
+    {
+        var customer = await CustomerAsync();
+        await TopUpAsync(customer, 100m, ClockAt(1));
+        var date = new DateOnly(year, month, day);
+
+        var upTo = await HistoryAsync(customer, new HistoryQuery { To = date });
+        var from = await HistoryAsync(customer, new HistoryQuery { From = date });
+
+        Assert.Equal(year == 9999 ? 1 : 0, upTo.TotalCount);
+        Assert.Equal(year == 9999 ? 0 : 1, from.TotalCount);
+    }
+
+    [Fact]
     public async Task Only_a_from_date_or_only_a_to_date_cuts_one_side()
     {
         var customer = await CustomerAsync();

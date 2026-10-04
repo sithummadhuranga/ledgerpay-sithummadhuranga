@@ -35,8 +35,9 @@ public sealed class TransactionQueries(IAppDbContext db) : ITransactionQueries
 
         if (query.To is { } to)
         {
-            var end = to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            rows = rows.Where(row => row.CreatedAt < end);
+            // The last instant of the day, so the largest date cannot overflow by adding a day to it.
+            var end = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+            rows = rows.Where(row => row.CreatedAt <= end);
         }
 
         var totalCount = await rows.CountAsync(cancellationToken);
