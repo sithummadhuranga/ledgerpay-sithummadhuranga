@@ -14,7 +14,10 @@ const minutes = (seconds: number | undefined) => Math.max(1, Math.ceil((seconds 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`
 
 const messages: Record<string, Describe> = {
-  VALIDATION_FAILED: () => 'Some details need fixing. Check the fields marked below.',
+  VALIDATION_FAILED: (error) => {
+    const details = Object.values(error.errors).flat()
+    return details.length > 0 ? `Some details need fixing. ${details.join(' ')}` : 'Some details need fixing.'
+  },
   IDEMPOTENCY_KEY_REQUIRED: () => 'We could not send this request. Try again.',
   UNAUTHENTICATED: () => 'Your session ended. Sign in again.',
   INVALID_CREDENTIALS: () => 'The email or password is wrong.',

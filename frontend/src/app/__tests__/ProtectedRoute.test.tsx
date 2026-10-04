@@ -4,7 +4,7 @@ import type { RouteObject } from 'react-router-dom'
 import { ProtectedRoute } from '@/app/ProtectedRoute'
 import { routes as appRoutes } from '@/app/routes'
 import { tokenStore } from '@/lib/api/token'
-import { customerLogin, json, mockApi, renderApp } from '@/test/helpers'
+import { customerLogin, json, mockApi, renderApp, signOut } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -21,7 +21,7 @@ describe('protected routes', () => {
   it('sends someone who is not signed in to the sign-in screen', async () => {
     mockApi({})
 
-    const { router } = renderApp('/')
+    const { router } = renderApp('/wallet')
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/login')
@@ -34,11 +34,11 @@ describe('protected routes', () => {
       'GET /wallets/me/transactions?page=1&pageSize=5': json(200, emptyPage),
     })
 
-    const { user, router } = renderApp('/')
+    const { user, router } = renderApp('/wallet')
     await signIn(user)
 
     expect(await screen.findByText('LKR 12,450.00')).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/')
+    expect(router.state.location.pathname).toBe('/wallet')
   })
 
   it('keeps a signed-in user out of a page for another role', async () => {
@@ -75,12 +75,12 @@ describe('protected routes', () => {
       'GET /wallets/me': json(200, wallet),
       'GET /wallets/me/transactions?page=1&pageSize=5': json(200, emptyPage),
     })
-    const { user, router } = renderApp('/')
+    const { user, router } = renderApp('/wallet')
     await signIn(user)
     await screen.findByText('LKR 12,450.00')
     expect(tokenStore.get()).toBe('token-for-tests')
 
-    await user.click(screen.getByRole('button', { name: /sign out/i }))
+    await signOut(user)
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
     expect(tokenStore.get()).toBeNull()

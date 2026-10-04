@@ -1,9 +1,15 @@
 import { Check, Copy } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { Button } from '@/components/ui/button'
 
+interface CopyButtonProps {
+  value: string
+  subject: string
+  variant?: ComponentProps<typeof Button>['variant']
+}
+
 // The button says what it copies, and a separate live region announces that it worked.
-export function CopyButton({ value, subject }: { value: string; subject: string }) {
+export function CopyButton({ value, subject, variant = 'ghost' }: CopyButtonProps) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -22,7 +28,7 @@ export function CopyButton({ value, subject }: { value: string; subject: string 
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={copy}>
+      <Button variant={variant} size="xs" onClick={copy}>
         {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
         {copied ? 'Copied' : 'Copy'}{' '}
         <span className="sr-only">{subject}</span>

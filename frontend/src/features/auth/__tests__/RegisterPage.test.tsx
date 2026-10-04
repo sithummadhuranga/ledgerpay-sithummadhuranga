@@ -9,6 +9,7 @@ async function fill(user: ReturnType<typeof renderApp>['user'], values: Partial<
   await user.type(screen.getByLabelText('Email'), values.email ?? 'nimali.perera@example.com')
   await user.type(screen.getByLabelText('Mobile number'), values.phone ?? '+94771284635')
   await user.type(screen.getByLabelText('Password'), values.password ?? 'Kandy-Lake-2026!')
+  await user.type(screen.getByLabelText('Confirm password'), values.password ?? 'Kandy-Lake-2026!')
 }
 
 describe('the register screen', () => {
@@ -70,4 +71,42 @@ describe('the register screen', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('nimali.perera@example.com')
     expect(calls[0]?.body).toEqual({ fullName: 'Nimali Perera', email: 'nimali.perera@example.com', phone: '+94771284635', password: 'Kandy-Lake-2026!' })
   })
+
+  it('asks for the password twice and says when the two are not the same', async () => {
+    const { fetchMock } = mockApi({})
+    const { user } = renderApp('/register')
+
+    await fill(user)
+    await user.clear(screen.getByLabelText('Confirm password'))
+    await user.type(screen.getByLabelText('Confirm password'), 'Kandy-Lake-2027!')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(await screen.findByText('The two passwords are not the same.')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not send the repeated password to the api', async () => {
+    const { calls } = mockApi({
+      'POST /auth/register': json(201, { fullName: 'Nimali Perera', email: 'nimali.perera@example.com', phone: '+94771284635', walletNumber: '482915067314' }),
+    })
+    const { user } = renderApp('/register')
+
+    await fill(user)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await screen.findByText('Your account is ready. Sign in to continue.')
+    expect(Object.keys(calls[0]!.body as object)).not.toContain('confirmPassword')
+  })
+
+  it('lets the user see each password they typed', async () => {
+    mockApi({})
+    const { user } = renderApp('/register')
+    await user.type(await screen.findByLabelText('Password'), 'Kandy-Lake-2026!')
+
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Confirm password')).toHaveAttribute('type', 'password')
+  })
 })
+

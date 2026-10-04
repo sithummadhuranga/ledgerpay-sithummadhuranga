@@ -11,7 +11,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': 'http://localhost:5100' },
+    proxy: {
+      '/api': 'http://localhost:5100',
+      '/swagger': 'http://localhost:5100',
+      '/openapi': 'http://localhost:5100',
+    },
   },
   test: {
     environment: 'jsdom',
