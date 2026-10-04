@@ -43,6 +43,28 @@ public class HistoryEndpointsTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_transfer_that_was_refused_shows_as_failed_with_the_code_and_no_balance()
+    {
+        var client = Client();
+        var sender = await ApiCalls.NewCustomerAsync(client, 105m);
+        var receiver = await ApiCalls.NewCustomerAsync(client);
+        var refused = await ApiCalls.TransferAsync(client, sender.Token, new { recipientWalletNumber = receiver.WalletNumber, amount = 1000m });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+
+        var response = await ApiCalls.GetAsync(client, Url, sender.Token);
+
+        using var body = await ApiCalls.ReadAsync(response);
+        var failed = body.RootElement.GetProperty("items")[0];
+        Assert.Equal("Failed", failed.GetProperty("status").GetString());
+        Assert.Equal(ErrorCodes.InsufficientFunds, failed.GetProperty("failureCode").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, failed.GetProperty("balanceAfter").ValueKind);
+        Assert.Equal("Sent", failed.GetProperty("direction").GetString());
+        Assert.Equal(2, body.RootElement.GetProperty("totalCount").GetInt32());
+        var receiverView = await ApiCalls.ReadAsync(await ApiCalls.GetAsync(client, Url, receiver.Token));
+        Assert.Equal(0, receiverView.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Fact]
     public async Task History_never_shows_the_wallet_number_email_or_phone_of_the_other_side()
     {
         var client = Client();

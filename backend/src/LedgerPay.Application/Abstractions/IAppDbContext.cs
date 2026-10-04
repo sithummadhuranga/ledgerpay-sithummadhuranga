@@ -17,7 +17,8 @@ public interface IAppDbContext
     DbSet<SystemSetting> SystemSettings { get; }
     DbSet<AuditLog> AuditLogs { get; }
 
-    // The wallet statement view for one wallet, joined to its transactions and counterparties, in no particular order.
+    // The history of one wallet: its lines from the wallet statement view joined to their transactions and counterparties,
+    // plus the transfers its holder sent and had refused. In no particular order.
     // Cut it with Where after this call: a filter then runs after the view has worked out the running balance.
     IQueryable<StatementRow> WalletStatement(Guid walletId);
 

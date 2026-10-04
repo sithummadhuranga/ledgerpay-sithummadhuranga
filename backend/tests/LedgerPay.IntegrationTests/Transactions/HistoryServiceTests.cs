@@ -180,24 +180,108 @@ public class HistoryServiceTests(SqlServerFixture sql)
         Assert.Equal([200m, 100m], to.Items.Select(item => item.Amount));
     }
 
+    private async Task RejectedTransferAsync(User from, User to, decimal amount, TimeProvider clock)
+    {
+        await using var db = sql.NewContext();
+        var wallet = db.Wallets.Single(candidate => candidate.UserId == to.Id);
+        var result = await TestServices.Transfers(db, clock).TransferAsync(
+            from.Id, TestServices.NewKey(), new TransferRequest(wallet.WalletNumber, null, amount, null), Caller, CancellationToken.None);
+        Assert.False(result.Succeeded);
+    }
+
     [Fact]
-    public async Task A_rejected_transfer_is_not_in_the_history()
+    public async Task A_rejected_transfer_shows_for_the_sender_as_failed_with_its_reason_and_not_for_the_receiver()
     {
         var sender = await CustomerAsync();
         var receiver = await CustomerAsync();
         await TopUpAsync(sender, 150m, ClockAt(1));
+        await RejectedTransferAsync(sender, receiver, 1000m, ClockAt(2));
+
+        var history = await HistoryAsync(sender);
+
+        Assert.Equal(2, history.TotalCount);
+        var failed = history.Items[0];
+        Assert.Equal(TransactionStatus.Failed, failed.Status);
+        Assert.Equal("INSUFFICIENT_FUNDS", failed.FailureCode);
+        Assert.Equal(TransactionDirection.Sent, failed.Direction);
+        Assert.Equal(1000m, failed.Amount);
+        Assert.Equal(0m, failed.Fee);
+        Assert.Null(failed.BalanceAfter);
+        Assert.Equal("N*** P***", failed.CounterpartyName);
+        Assert.Equal(TransactionStatus.Completed, history.Items[1].Status);
+        Assert.Null(history.Items[1].FailureCode);
+        Assert.Empty((await HistoryAsync(receiver)).Items);
+    }
+
+    [Fact]
+    public async Task A_rejected_transfer_does_not_change_the_running_balance_of_the_entries_around_it()
+    {
+        var sender = await CustomerAsync();
+        var receiver = await CustomerAsync();
+        await TopUpAsync(sender, 5000m, ClockAt(1));
+        await RejectedTransferAsync(sender, receiver, 9000m, ClockAt(2));
+        await TransferAsync(sender, receiver, 1000m, ClockAt(3));
+
+        var history = await HistoryAsync(sender);
+
+        Assert.Equal([TransactionStatus.Completed, TransactionStatus.Failed, TransactionStatus.Completed], history.Items.Select(item => item.Status));
+        Assert.Equal<decimal?>([3990m, null, 5000m], history.Items.Select(item => item.BalanceAfter));
+    }
+
+    [Fact]
+    public async Task Rejected_transfers_count_in_the_totals_the_pages_and_the_date_filters()
+    {
+        var sender = await CustomerAsync();
+        var receiver = await CustomerAsync();
+        await TopUpAsync(sender, 150m, ClockAt(1));
+        await RejectedTransferAsync(sender, receiver, 1000m, ClockAt(2));
+        await RejectedTransferAsync(sender, receiver, 2000m, ClockAt(3));
+
+        var everything = await HistoryAsync(sender, new HistoryQuery { PageSize = 2 });
+        var second = await HistoryAsync(sender, new HistoryQuery { Page = 2, PageSize = 2 });
+        var only = await HistoryAsync(sender, new HistoryQuery { From = new DateOnly(2026, 9, 2), To = new DateOnly(2026, 9, 2) });
+
+        Assert.Equal((3, 2), (everything.TotalCount, everything.TotalPages));
+        Assert.Equal([2000m, 1000m], everything.Items.Select(item => item.Amount));
+        Assert.Single(second.Items);
+        Assert.Equal(1000m, only.Items.Single().Amount);
+    }
+
+    [Fact]
+    public async Task A_rejected_top_up_is_not_in_the_history_of_the_wallet_owner()
+    {
+        var customer = await CustomerAsync();
         await using (var db = sql.NewContext())
         {
-            var wallet = db.Wallets.Single(candidate => candidate.UserId == receiver.Id);
-            var result = await TestServices.Transfers(db, ClockAt(2)).TransferAsync(
-                sender.Id, TestServices.NewKey(), new TransferRequest(wallet.WalletNumber, null, 1000m, null), Caller, CancellationToken.None);
+            var wallet = db.Wallets.Single(candidate => candidate.UserId == customer.Id);
+            wallet.Status = WalletStatus.Frozen;
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            var result = await TestServices.TopUps(db, ClockAt(2)).TopUpAsync(
+                customer.Id, TestServices.NewKey(),
+                new TopUpRequest(wallet.WalletNumber, 100m, TestServices.NewBankReference(), null), Caller, CancellationToken.None);
             Assert.False(result.Succeeded);
+        }
+
+        Assert.Empty((await HistoryAsync(customer)).Items);
+    }
+
+    [Fact]
+    public async Task A_rejected_transfer_to_a_wallet_that_does_not_exist_has_no_counterparty()
+    {
+        var sender = await CustomerAsync();
+        await TopUpAsync(sender, 5000m, ClockAt(1));
+        await using (var db = sql.NewContext())
+        {
+            var result = await TestServices.Transfers(db, ClockAt(2)).TransferAsync(
+                sender.Id, TestServices.NewKey(), new TransferRequest("100000000000", null, 500m, null), Caller, CancellationToken.None);
+            Assert.Equal("RECIPIENT_NOT_FOUND", result.ErrorCode);
         }
 
         var history = await HistoryAsync(sender);
 
-        Assert.Single(history.Items);
-        Assert.Empty((await HistoryAsync(receiver)).Items);
+        Assert.Equal(2, history.TotalCount);
+        Assert.Equal("RECIPIENT_NOT_FOUND", history.Items[0].FailureCode);
+        Assert.Null(history.Items[0].CounterpartyName);
     }
 
     [Fact]

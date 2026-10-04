@@ -21,10 +21,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     // The view has the running balance. The joins add what a history line shows. The counterparty is the other wallet
-    // of the transaction, and a top-up has none. The wallet id is the only filter in here and it is a parameter.
+    // of the transaction, and a top-up has none. The second part adds the transfers this wallet's holder sent and had
+    // refused: they posted nothing, so the view does not have them. A refused top-up is the operator's, not the
+    // holder's, and is not listed. The wallet id is the only filter in here and it is a parameter.
     public IQueryable<StatementRow> WalletStatement(Guid walletId) => Database.SqlQuery<StatementRow>($"""
-        SELECT s.Sequence, s.CreatedAt, s.Debit, s.BalanceAfter,
-               t.Reference, t.Type, t.Status, t.Amount, t.Fee, t.Note,
+        SELECT s.Sequence AS Sequence, s.CreatedAt AS CreatedAt,
+               CAST(CASE WHEN t.SenderWalletId = s.WalletId THEN 1 ELSE 0 END AS bit) AS Sent,
+               s.BalanceAfter AS BalanceAfter,
+               t.Reference, t.Type, t.Status, t.FailureCode, t.Amount, t.Fee, t.Note,
                counterparty.FullName AS CounterpartyName
         FROM [dbo].[vw_WalletStatement] AS s
         INNER JOIN [dbo].[Transactions] AS t ON t.Id = s.TransactionId
@@ -32,6 +36,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             ON other.Id = CASE WHEN t.SenderWalletId = s.WalletId THEN t.ReceiverWalletId ELSE t.SenderWalletId END
         LEFT JOIN [dbo].[Users] AS counterparty ON counterparty.Id = other.UserId
         WHERE s.WalletId = {walletId}
+        UNION ALL
+        SELECT CAST(NULL AS bigint), t.CreatedAt, CAST(1 AS bit), CAST(NULL AS decimal(18, 2)),
+               t.Reference, t.Type, t.Status, t.FailureCode, t.Amount, t.Fee, t.Note,
+               receiver.FullName
+        FROM [dbo].[Transactions] AS t
+        LEFT JOIN [dbo].[Wallets] AS receiverWallet ON receiverWallet.Id = t.ReceiverWalletId
+        LEFT JOIN [dbo].[Users] AS receiver ON receiver.Id = receiverWallet.UserId
+        WHERE t.SenderWalletId = {walletId} AND t.Status = 'Failed' AND t.Type = 'Transfer'
         """);
 
     public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => Database.CanConnectAsync(cancellationToken);

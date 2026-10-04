@@ -41,7 +41,9 @@ public sealed class TransactionQueries(IAppDbContext db) : ITransactionQueries
 
         var totalCount = await rows.CountAsync(cancellationToken);
         var page = await rows
-            .OrderByDescending(row => row.Sequence)
+            .OrderByDescending(row => row.CreatedAt)
+            .ThenByDescending(row => row.Sequence)
+            .ThenByDescending(row => row.Reference)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(cancellationToken);
@@ -119,19 +121,19 @@ public sealed class TransactionQueries(IAppDbContext db) : ITransactionQueries
 
     private static HistoryItem ToItem(StatementRow row)
     {
-        // A debit on the wallet account is money going out. The fee is the sender's, so the receiver never sees it.
-        var sent = row.Debit > 0;
+        // The fee is the sender's, so the receiver never sees it.
         return new HistoryItem(
             row.Reference,
             Enum.Parse<TransactionType>(row.Type),
-            sent ? TransactionDirection.Sent : TransactionDirection.Received,
+            row.Sent ? TransactionDirection.Sent : TransactionDirection.Received,
             row.Amount,
-            sent ? row.Fee : 0m,
+            row.Sent ? row.Fee : 0m,
             row.CounterpartyName is null ? null : NameMask.Of(row.CounterpartyName),
             row.Note,
             Enum.Parse<TransactionStatus>(row.Status),
             Utc(row.CreatedAt),
-            row.BalanceAfter);
+            row.BalanceAfter,
+            row.FailureCode);
     }
 
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);

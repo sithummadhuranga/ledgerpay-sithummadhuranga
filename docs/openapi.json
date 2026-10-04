@@ -733,7 +733,8 @@
           "note",
           "status",
           "createdAt",
-          "balanceAfter"
+          "balanceAfter",
+          "failureCode"
         ],
         "type": "object",
         "properties": {
@@ -784,10 +785,17 @@
           "balanceAfter": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
+              "null",
               "number",
               "string"
             ],
             "format": "double"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
