@@ -139,6 +139,78 @@ public class ApiPermissionTests(SqlServerFixture sql)
         Assert.Equal(0, await HasPermissionAsync(api, "dbo.RefreshTokens", "OBJECT", "DELETE"));
     }
 
+    // Azure SQL has no server logins, so the user is made inside the database with its own password. The test database is
+    // made with partial containment, which Azure SQL has by default.
+    private async Task<(string ConnectionString, string User)> ContainedDatabaseAsync(string password)
+    {
+        var database = "LedgerPayContained" + Guid.NewGuid().ToString("N")[..12];
+        await using (var master = new SqlConnection(sql.ServerConnectionString()))
+        {
+            await master.OpenAsync(TestContext.Current.CancellationToken);
+            await using var command = master.CreateCommand();
+            command.CommandText = $"EXEC sp_configure 'contained database authentication', 1; RECONFIGURE; CREATE DATABASE [{database}] CONTAINMENT = PARTIAL;";
+            await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var connectionString = new SqlConnectionStringBuilder(sql.AdminConnectionString) { InitialCatalog = database }.ConnectionString;
+        await using var owner = SqlServerFixture.NewContext(connectionString);
+        await owner.Database.MigrateAsync(TestContext.Current.CancellationToken);
+
+        var user = "ledgerpay_contained_" + Guid.NewGuid().ToString("N")[..8];
+        await DatabasePermissions.ApplyAsync(owner, user, CancellationToken.None, password);
+        return (connectionString, user);
+    }
+
+    private static string AsUser(string connectionString, string user, string password) =>
+        new SqlConnectionStringBuilder(connectionString) { UserID = user, Password = password, Pooling = false }.ConnectionString;
+
+    [Fact]
+    public async Task A_user_made_inside_the_database_gets_the_same_limited_rights_as_a_login_user()
+    {
+        const string password = "Contained-Pass-2026-Aa1!";
+        var (connectionString, user) = await ContainedDatabaseAsync(password);
+
+        await using var api = SqlServerFixture.NewContext(AsUser(connectionString, user, password));
+
+        Assert.True(await api.Database.CanConnectAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(1, await HasPermissionAsync(api, "dbo.LedgerEntries", "OBJECT", "INSERT"));
+        Assert.Equal(0, await HasPermissionAsync(api, "dbo.LedgerEntries", "OBJECT", "UPDATE"));
+        Assert.Equal(0, await HasPermissionAsync(api, "dbo.LedgerEntries", "OBJECT", "DELETE"));
+        Assert.Equal(0, await HasPermissionAsync(api, "dbo.AuditLogs", "OBJECT", "DELETE"));
+        Assert.Equal(1, await HasColumnPermissionAsync(api, "dbo.Users", "LockoutEnd", "UPDATE"));
+        Assert.Equal(0, await HasColumnPermissionAsync(api, "dbo.Users", "PasswordHash", "UPDATE"));
+        Assert.Equal(0, await HasPermissionAsync(api, new SqlConnectionStringBuilder(connectionString).InitialCatalog, "DATABASE", "CREATE TABLE"));
+    }
+
+    [Fact]
+    public async Task Running_the_setup_again_with_a_new_password_changes_the_password()
+    {
+        const string first = "Contained-Pass-2026-Aa1!";
+        const string second = "Rotated-Pass-2027-Bb2!";
+        var (connectionString, user) = await ContainedDatabaseAsync(first);
+
+        await using (var owner = SqlServerFixture.NewContext(connectionString))
+        {
+            await DatabasePermissions.ApplyAsync(owner, user, CancellationToken.None, second);
+        }
+
+        await using var withNew = SqlServerFixture.NewContext(AsUser(connectionString, user, second));
+        await using var withOld = SqlServerFixture.NewContext(AsUser(connectionString, user, first));
+        Assert.True(await withNew.Database.CanConnectAsync(TestContext.Current.CancellationToken));
+        Assert.False(await withOld.Database.CanConnectAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_password_with_a_quote_in_it_is_taken_as_text_and_does_not_break_out_of_the_statement()
+    {
+        const string password = "It'sA-Pass-2026-Aa1!";
+        var (connectionString, user) = await ContainedDatabaseAsync(password);
+
+        await using var api = SqlServerFixture.NewContext(AsUser(connectionString, user, password));
+
+        Assert.True(await api.Database.CanConnectAsync(TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task Applying_permissions_twice_does_not_fail()
     {

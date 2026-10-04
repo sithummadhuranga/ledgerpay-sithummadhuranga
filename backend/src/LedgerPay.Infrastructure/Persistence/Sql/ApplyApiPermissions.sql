@@ -1,8 +1,22 @@
 -- @ApiUser is declared by the caller and holds the login the API connects with. Run as the schema owner, never as the API login.
+-- @ApiPassword is declared by the caller too. It is null where a login exists in the server (the local container and the tests).
+-- Where it is set, which is Azure SQL, there are no server logins, so the user is made in the database with its own password.
 DECLARE @quoted nvarchar(260) = QUOTENAME(@ApiUser);
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @ApiUser)
-    EXEC(N'CREATE USER ' + @quoted + N' FOR LOGIN ' + @quoted);
+-- A quote in the password is doubled, so it stays inside the string of the statement.
+DECLARE @escaped nvarchar(300) = REPLACE(@ApiPassword, '''', '''''');
+
+IF @ApiPassword IS NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @ApiUser)
+        EXEC(N'CREATE USER ' + @quoted + N' FOR LOGIN ' + @quoted);
+END
+ELSE IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @ApiUser)
+    EXEC(N'CREATE USER ' + @quoted + N' WITH PASSWORD = N''' + @escaped + N'''');
+ELSE
+    -- Running the setup again with a new password changes it, so a password can be rotated. This only works for a user made
+    -- with a password. A user that belongs to a server login has no password of its own, and the statement refuses it.
+    EXEC(N'ALTER USER ' + @quoted + N' WITH PASSWORD = N''' + @escaped + N'''');
 
 -- No DELETE is granted anywhere. The revoke removes a schema-wide INSERT or UPDATE grant left by an earlier version.
 EXEC(N'REVOKE INSERT, UPDATE ON SCHEMA::dbo FROM ' + @quoted);
