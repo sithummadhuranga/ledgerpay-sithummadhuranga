@@ -1,47 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { ErrorState } from '@/components/ErrorState'
 import { PageHeader } from '@/components/PageHeader'
 import { Receipt } from '@/components/Receipt'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getTransaction } from '@/lib/api/backoffice'
 import { ApiError } from '@/lib/api/problem'
 import { describeError } from '@/lib/errors'
 import { formatDateTime, formatMoney } from '@/lib/format'
 
-export function TransactionLookupPage() {
-  const [draft, setDraft] = useState('')
-  const [reference, setReference] = useState('')
+export function TransactionDetailPage() {
+  const { reference = '' } = useParams()
   const found = useQuery({
     queryKey: ['transaction', reference],
     queryFn: ({ signal }) => getTransaction(reference, signal),
-    enabled: reference !== '',
     retry: false,
   })
 
   return (
     <>
-      <PageHeader title="Find a transaction" intro="Look a transaction up by its reference. You see both wallet numbers and, for a top-up, the bank reference." />
-      <form
-        className="mb-8 flex max-w-xl flex-wrap items-end gap-3"
-        onSubmit={(event) => {
-          event.preventDefault()
-          setReference(draft.trim().toUpperCase())
-        }}
-      >
-        <div className="grid min-w-56 flex-1 gap-1.5">
-          <Label htmlFor="reference">Reference</Label>
-          <Input id="reference" value={draft} onChange={(event) => setDraft(event.target.value)} autoComplete="off" placeholder="TX…" className="num" />
-        </div>
-        <Button type="submit" disabled={draft.trim() === ''}>
-          Find
-        </Button>
-      </form>
-
-      {reference === '' ? null : found.isPending ? (
+      <PageHeader title="Transaction" intro={reference} />
+      {found.isPending ? (
         <div aria-busy="true" aria-label="Looking up the transaction" className="grid max-w-xl gap-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -71,6 +50,9 @@ export function TransactionLookupPage() {
           />
         </div>
       )}
+      <Link to="/backoffice/transactions" className="mt-6 inline-block text-sm underline underline-offset-4">
+        Back to the transactions
+      </Link>
     </>
   )
 }

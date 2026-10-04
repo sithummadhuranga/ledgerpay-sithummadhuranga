@@ -1,15 +1,6 @@
 import { api } from './client'
+import { buildQuery as query } from './query'
 import type { HistoryFilter, HistoryItem, LookupResult, Page, Quote, Wallet } from './types'
-
-const query = (values: Record<string, string | number | undefined>) => {
-  const search = new URLSearchParams()
-  for (const [key, value] of Object.entries(values)) {
-    if (value !== undefined && value !== '') {
-      search.set(key, String(value))
-    }
-  }
-  return search.toString()
-}
 
 export const getMyWallet = (signal?: AbortSignal) => api.get<Wallet>('/wallets/me', { signal })
 

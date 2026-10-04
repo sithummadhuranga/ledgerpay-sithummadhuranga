@@ -1,9 +1,17 @@
 import { screen } from '@testing-library/react'
 import { act } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adminLogin, customerLogin, emptyPage, json, openAs, operatorLogin, wallet } from '@/test/helpers'
+import { adminLogin, customerLogin, emptyList, emptyPage, json, openAs, operatorLogin, overviewReplies, wallet } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
+
+const staffScreens = {
+  ...overviewReplies,
+  'GET /admin/users?page=1&pageSize=10': json(200, { ...emptyList, pageSize: 10 }),
+  'GET /admin/transactions?page=1&pageSize=10': json(200, { ...emptyList, pageSize: 10 }),
+  'GET /admin/audit-logs?page=1&pageSize=20': json(200, { ...emptyList, pageSize: 20 }),
+  'GET /admin/staff': json(200, []),
+}
 
 const customerScreens = {
   'GET /wallets/me': json(200, wallet),
@@ -18,8 +26,8 @@ async function visit(router: Awaited<ReturnType<typeof openAs>>['router'], path:
 
 describe('who may open which page', () => {
   it('keeps an admin out of the top-up, which only an operator may make', async () => {
-    const { router } = await openAs(adminLogin)
-    await screen.findByRole('heading', { name: 'Freeze or unfreeze a wallet' })
+    const { router } = await openAs(adminLogin, staffScreens)
+    await screen.findByRole('heading', { name: 'Needs attention' })
 
     await visit(router, '/operator/top-up')
 
@@ -31,7 +39,10 @@ describe('who may open which page', () => {
     const { router } = await openAs(customerLogin, customerScreens)
     await screen.findByText('LKR 12,450.00')
 
-    for (const path of ['/operator/top-up', '/backoffice/wallets', '/backoffice/transactions']) {
+    for (const path of [
+      '/operator/top-up', '/backoffice', '/backoffice/users', '/backoffice/users/482915067314', '/backoffice/transactions',
+      '/backoffice/transactions/TX1', '/backoffice/audit', '/backoffice/staff',
+    ]) {
       await visit(router, path)
       expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
     }
@@ -47,22 +58,40 @@ describe('who may open which page', () => {
     }
   })
 
-  it('lets an operator open the wallet status and the transaction lookup as well as the top-up', async () => {
-    const { router } = await openAs(operatorLogin)
+  it('lets an operator open the shared back office, and not the audit log or the staff, which are for admins', async () => {
+    const { router } = await openAs(operatorLogin, staffScreens)
     await screen.findByRole('heading', { name: 'Top up a wallet' })
 
-    await visit(router, '/backoffice/wallets')
-    expect(await screen.findByRole('heading', { name: 'Freeze or unfreeze a wallet' })).toBeInTheDocument()
+    await visit(router, '/backoffice')
+    expect(await screen.findByRole('heading', { name: 'Needs attention' })).toBeInTheDocument()
+    await visit(router, '/backoffice/users')
+    expect(await screen.findByRole('heading', { name: 'Customers' })).toBeInTheDocument()
     await visit(router, '/backoffice/transactions')
-    expect(await screen.findByRole('heading', { name: 'Find a transaction' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Transactions' })).toBeInTheDocument()
+    for (const path of ['/backoffice/audit', '/backoffice/staff']) {
+      await visit(router, path)
+      expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
+    }
+  })
+
+  it('lets an admin open the audit log and the staff as well as the shared back office', async () => {
+    const { router } = await openAs(adminLogin, staffScreens)
+    await screen.findByRole('heading', { name: 'Needs attention' })
+
+    await visit(router, '/backoffice/audit')
+    expect(await screen.findByRole('heading', { name: 'Audit log' })).toBeInTheDocument()
+    await visit(router, '/backoffice/staff')
+    expect(await screen.findByRole('heading', { name: 'Staff' })).toBeInTheDocument()
+    await visit(router, '/backoffice/users')
+    expect(await screen.findByRole('heading', { name: 'Customers' })).toBeInTheDocument()
   })
 
   it('sends someone who is signed in and opens the sign-in page to the first page of their role', async () => {
-    const { router } = await openAs(adminLogin)
-    await screen.findByRole('heading', { name: 'Freeze or unfreeze a wallet' })
+    const { router } = await openAs(adminLogin, staffScreens)
+    await screen.findByRole('heading', { name: 'Needs attention' })
 
     await visit(router, '/login')
 
-    expect(router.state.location.pathname).toBe('/backoffice/wallets')
+    expect(router.state.location.pathname).toBe('/backoffice')
   })
 })

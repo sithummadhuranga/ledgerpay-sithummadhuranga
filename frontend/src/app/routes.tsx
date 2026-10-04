@@ -2,9 +2,14 @@ import type { RouteObject } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { SessionsPage } from '@/features/sessions/SessionsPage'
+import { AuditLogPage } from '@/features/backoffice/AuditLogPage'
+import { BackOfficePage } from '@/features/backoffice/BackOfficePage'
+import { StaffPage } from '@/features/backoffice/StaffPage'
+import { StaffTransactionsPage } from '@/features/backoffice/StaffTransactionsPage'
 import { TopUpPage } from '@/features/backoffice/TopUpPage'
-import { TransactionLookupPage } from '@/features/backoffice/TransactionLookupPage'
-import { WalletStatusPage } from '@/features/backoffice/WalletStatusPage'
+import { TransactionDetailPage } from '@/features/backoffice/TransactionDetailPage'
+import { UserDetailPage } from '@/features/backoffice/UserDetailPage'
+import { UsersPage } from '@/features/backoffice/UsersPage'
 import { HistoryPage } from '@/features/history/HistoryPage'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { SendMoneyPage } from '@/features/send/SendMoneyPage'
@@ -39,8 +44,18 @@ export const routes: RouteObject[] = [
           {
             element: <ProtectedRoute roles={['Operator', 'Admin']} />,
             children: [
-              { path: '/backoffice/wallets', element: <WalletStatusPage /> },
-              { path: '/backoffice/transactions', element: <TransactionLookupPage /> },
+              { path: '/backoffice', element: <BackOfficePage /> },
+              { path: '/backoffice/users', element: <UsersPage /> },
+              { path: '/backoffice/users/:walletNumber', element: <UserDetailPage /> },
+              { path: '/backoffice/transactions', element: <StaffTransactionsPage /> },
+              { path: '/backoffice/transactions/:reference', element: <TransactionDetailPage /> },
+            ],
+          },
+          {
+            element: <ProtectedRoute roles={['Admin']} />,
+            children: [
+              { path: '/backoffice/audit', element: <AuditLogPage /> },
+              { path: '/backoffice/staff', element: <StaffPage /> },
             ],
           },
         ],

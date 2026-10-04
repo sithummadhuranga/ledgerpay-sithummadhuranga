@@ -74,6 +74,16 @@ export const adminLogin: LoginResponse = { ...customerLogin, fullName: 'Chamara 
 
 export const wallet = { walletNumber: '482915067314', holderName: 'Nimali Perera', balance: 12450, availableBalance: 12450, currency: 'LKR', status: 'Active' }
 
+// A list with nothing in it, at the size the overview asks for.
+export const emptyList = { items: [], page: 1, pageSize: 5, totalCount: 0, totalPages: 0 }
+
+// The three calls the overview page makes when it opens, all answered with nothing to show.
+export const overviewReplies = {
+  'GET /admin/users?page=1&pageSize=5&status=Frozen': json(200, emptyList),
+  'GET /admin/users?page=1&pageSize=5&status=Locked': json(200, emptyList),
+  'GET /admin/transactions?page=1&pageSize=5&type=Transfer&status=Failed': json(200, emptyList),
+}
+
 export const emptyPage = { items: [], page: 1, pageSize: 5, totalCount: 0, totalPages: 0 }
 
 // Fills the sign-in form and submits it.

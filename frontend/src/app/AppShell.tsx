@@ -22,11 +22,12 @@ export function AppShell() {
             <NavLink to={homeFor(user?.roles ?? [])} aria-label="LedgerPay home">
               <Logo />
             </NavLink>
-            <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+            <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
               {items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.end}
                   className={({ isActive }) =>
                     cn(
                       'rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground',
@@ -43,16 +44,17 @@ export function AppShell() {
         </div>
       </header>
 
-      <main id="content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-28 sm:px-6 sm:py-10 md:pb-10">
+      <main id="content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-28 sm:px-6 sm:py-10 lg:pb-10">
         <Outlet />
       </main>
 
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
         <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
           {items.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
+                end={item.end}
                 className={({ isActive }) =>
                   cn(
                     'flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground',

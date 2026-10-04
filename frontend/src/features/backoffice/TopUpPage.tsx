@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import { AmountField } from '@/components/AmountField'
 import { PageHeader } from '@/components/PageHeader'
@@ -34,7 +35,10 @@ export function TopUpPage() {
   // One key for one attempt. Sending the same details again after a lost connection reuses the key, so the credit
   // is made once. Different details, or an attempt the server refused, are a new attempt and get a new key.
   const attempt = useRef<{ signature: string; key: string } | null>(null)
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: empty })
+  // A customer's page links here with the wallet number filled in.
+  const [params] = useSearchParams()
+  const preset = /^[0-9]{12}$/.test(params.get('wallet') ?? '') ? params.get('wallet')! : ''
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { ...empty, walletNumber: preset } })
 
   const credit = useMutation({
     mutationFn: (values: Values) => {

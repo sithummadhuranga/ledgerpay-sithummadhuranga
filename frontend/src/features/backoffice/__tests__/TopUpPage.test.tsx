@@ -21,6 +21,18 @@ const send = (user: Opened['user']) => user.click(screen.getByRole('button', { n
 const topUps = (calls: Opened['calls']) => calls.filter((call) => call.key === 'POST /admin/topups')
 
 describe('the operator top-up', () => {
+  it('has the wallet number filled in when a customer page linked here with it', async () => {
+    await openAs(operatorLogin, {}, '/operator/top-up?wallet=482915067314')
+
+    expect(await screen.findByLabelText('Wallet number')).toHaveValue('482915067314')
+  })
+
+  it('ignores a wallet in the address that is not twelve digits', async () => {
+    await openAs(operatorLogin, {}, '/operator/top-up?wallet=abc')
+
+    expect(await screen.findByLabelText('Wallet number')).toHaveValue('')
+  })
+
   it('is the first page an operator sees', async () => {
     const { router } = await openAs(operatorLogin)
 

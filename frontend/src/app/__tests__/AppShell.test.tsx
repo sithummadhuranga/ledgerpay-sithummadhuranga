@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adminLogin, customerLogin, emptyPage, json, openAs, operatorLogin, wallet } from '@/test/helpers'
+import { adminLogin, customerLogin, emptyPage, json, openAs, operatorLogin, overviewReplies, wallet } from '@/test/helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -37,16 +37,17 @@ describe('the bar and the tab bar of a signed-in page', () => {
 
     const [bar] = await screen.findAllByRole('navigation', { name: 'Main' })
 
-    expect(within(bar!).getAllByRole('link').map((link) => link.textContent)).toEqual(['Top up', 'Wallets', 'Transactions'])
+    expect(within(bar!).getAllByRole('link').map((link) => link.textContent)).toEqual(['Top up', 'Overview', 'Customers', 'Transactions'])
     expect(screen.queryByRole('link', { name: 'Send' })).not.toBeInTheDocument()
   })
 
-  it('shows an admin the back office without the top-up', async () => {
-    await openAs(adminLogin)
+  it('shows an admin the back office, the audit log and the staff, without the top-up', async () => {
+    await openAs(adminLogin, overviewReplies)
 
     const [bar] = await screen.findAllByRole('navigation', { name: 'Main' })
 
-    expect(within(bar!).getAllByRole('link').map((link) => link.textContent)).toEqual(['Wallets', 'Transactions'])
+    expect(within(bar!).getAllByRole('link').map((link) => link.textContent)).toEqual(['Overview', 'Customers', 'Transactions', 'Audit log', 'Staff'])
+    expect(within(bar!).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('lets the keyboard skip the bar', async () => {
