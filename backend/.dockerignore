@@ -4,3 +4,6 @@
 tests
 LedgerPay.sln
 .vs
+**/.env*
+**/appsettings.*.local.json
+**/*.user
