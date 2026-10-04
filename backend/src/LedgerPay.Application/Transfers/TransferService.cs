@@ -19,6 +19,12 @@ public sealed class TransferService(
 {
     public async Task<ServiceResult<QuoteResponse>> QuoteAsync(decimal amount, CancellationToken cancellationToken)
     {
+        // The API validates the request first. A quote is not stored anywhere, so it checks the amount again itself.
+        if (!MoneyAmount.IsValid(amount))
+        {
+            return ServiceResult<QuoteResponse>.Fail(ErrorCodes.ValidationFailed);
+        }
+
         var settings = await settingsProvider.GetAsync(cancellationToken);
 
         if (amount < settings.TransferMinimum)

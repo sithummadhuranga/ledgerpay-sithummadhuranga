@@ -332,6 +332,20 @@ public class TransferServiceTests(SqlServerFixture sql)
         Assert.Equal((5000.00m, 25.00m, 5025.00m), (result.Value!.Amount, result.Value.Fee, result.Value.Total));
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-50.00")]
+    [InlineData("10.005")]
+    [InlineData("10000000000000000.00")]
+    public async Task Quote_refuses_an_amount_that_a_transfer_could_never_have(string amount)
+    {
+        await using var db = sql.NewContext();
+
+        var result = await NewService(db).QuoteAsync(decimal.Parse(amount), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ErrorCodes.ValidationFailed, result.ErrorCode);
+    }
+
     [Fact]
     public async Task Quote_refuses_an_amount_outside_the_transfer_limits()
     {

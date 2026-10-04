@@ -6,9 +6,8 @@ namespace LedgerPay.Application.Common;
 // because \d also matches digits from other scripts and $ lets a trailing newline through.
 public static class ValidationRules
 {
-    // The largest value a DECIMAL(18,2) column holds. The transfer maximum is a setting and is checked later,
-    // this only keeps an absurd value from reaching the database as an error.
-    public const decimal LargestAmount = 9_999_999_999_999_999.99m;
+    // Keeps an absurd value from reaching the database as an error. The transfer maximum is a setting, checked later.
+    public const decimal LargestAmount = LedgerPay.Domain.Rules.MoneyAmount.Largest;
 
     public static IRuleBuilderOptions<T, decimal> MoneyAmount<T>(this IRuleBuilder<T, decimal> rule) =>
         rule.GreaterThan(0).WithMessage("Amount must be above 0.")
