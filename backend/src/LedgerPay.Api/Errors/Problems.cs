@@ -63,9 +63,15 @@ public static class Problems
     };
 
     // For code that runs outside MVC, such as the exception handler and the token events.
-    public static Task WriteAsync(HttpContext context, string code, CancellationToken cancellationToken = default)
+    public static Task WriteAsync(
+        HttpContext context, string code, CancellationToken cancellationToken = default, int? retryAfterSeconds = null)
     {
-        var problem = Create(context, code);
+        if (retryAfterSeconds is not null)
+        {
+            context.Response.Headers.RetryAfter = retryAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var problem = Create(context, code, retryAfterSeconds: retryAfterSeconds);
         context.Response.StatusCode = problem.Status!.Value;
         return context.Response.WriteAsJsonAsync(problem, options: null, contentType: ContentType, cancellationToken);
     }

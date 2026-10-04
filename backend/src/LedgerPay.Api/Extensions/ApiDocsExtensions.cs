@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using LedgerPay.Api.Errors;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 
 namespace LedgerPay.Api.Extensions;
@@ -83,6 +84,12 @@ public static class ApiDocsExtensions
                     {
                         operation.Responses.TryAdd("403", new OpenApiResponse { Description = "The signed-in user's role is not allowed here. Code FORBIDDEN." });
                     }
+                }
+
+                if (metadata.OfType<EnableRateLimitingAttribute>().Any())
+                {
+                    operation.Responses ??= [];
+                    operation.Responses.TryAdd("429", new OpenApiResponse { Description = "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED." });
                 }
 
                 // MVC lists every format it could write. The API only speaks JSON, so the others are left out.

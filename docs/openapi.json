@@ -89,6 +89,9 @@
           },
           "403": {
             "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         },
         "security": [
@@ -225,6 +228,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         }
       }
@@ -285,6 +291,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         }
       }
@@ -393,6 +402,9 @@
           },
           "403": {
             "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         },
         "security": [
@@ -485,6 +497,9 @@
           },
           "403": {
             "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         },
         "security": [
@@ -593,6 +608,9 @@
           },
           "403": {
             "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
           }
         },
         "security": [

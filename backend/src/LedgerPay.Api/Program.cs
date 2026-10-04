@@ -23,6 +23,8 @@ builder.Services
     .AddApplication()
     .AddJwtAuthentication(jwt)
     .AddFrontendCors(builder.Configuration)
+    .AddApiRateLimiting(builder.Configuration)
+    .AddForwardedHeadersIfEnabled(builder.Configuration)
     .AddApiControllers()
     .AddApiHealthChecks()
     .AddApiDocs();
@@ -30,6 +32,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
+app.UseForwardedHeadersIfEnabled();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseExceptionHandler(_ => { });
@@ -42,6 +45,7 @@ app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseApiDocs();
 app.MapControllers();
 app.MapApiHealth();

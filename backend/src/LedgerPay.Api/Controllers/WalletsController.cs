@@ -1,11 +1,13 @@
 using LedgerPay.Api.Authorization;
 using LedgerPay.Api.Errors;
 using LedgerPay.Api.Extensions;
+using LedgerPay.Api.RateLimiting;
 using LedgerPay.Application.Transactions;
 using LedgerPay.Application.Wallets;
 using LedgerPay.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LedgerPay.Api.Controllers;
 
@@ -30,6 +32,7 @@ public sealed class WalletsController(IWalletService wallets, ITransactionQuerie
     }
 
     [HttpGet("lookup")]
+    [EnableRateLimiting(RateLimitPolicies.Lookup)]
     [EndpointSummary("Find a wallet by wallet number or mobile number before sending. Shows the number, a masked name and whether it is active. Customers only.")]
     [ProducesResponseType<LookupResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, Problems.ContentType)]

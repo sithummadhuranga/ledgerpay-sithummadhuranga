@@ -108,6 +108,23 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
         Assert.False(Operation(document, "post /api/v1/auth/login").GetProperty("responses").TryGetProperty("403", out _));
     }
 
+    [Fact]
+    public async Task The_limited_routes_document_429()
+    {
+        using var document = await DocumentAsync();
+
+        string[] limited =
+        [
+            "post /api/v1/auth/register", "post /api/v1/auth/login", "get /api/v1/wallets/lookup",
+            "get /api/v1/transfers/quote", "post /api/v1/transfers", "post /api/v1/admin/topups"
+        ];
+        foreach (var key in Operations)
+        {
+            var has429 = Operation(document, key).GetProperty("responses").TryGetProperty("429", out _);
+            Assert.Equal(limited.Contains(key), has429);
+        }
+    }
+
     [Theory]
     [InlineData("post /api/v1/transfers", true)]
     [InlineData("post /api/v1/admin/topups", true)]
