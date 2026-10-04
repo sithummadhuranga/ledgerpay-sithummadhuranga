@@ -1,11 +1,11 @@
 name: deploy
 
-# Every push to develop or main builds the api image and puts it in the GitHub container registry. The step that
-# deploys it to Azure only runs when the repository variable AZURE_DEPLOY is true, so a push is never red because
-# Azure is not set up. Nothing is published or deployed from any other branch, even when the run is started by hand.
+# Every push to main builds the api image and puts it in the GitHub container registry. The step that deploys it to
+# Azure only runs when the repository variable AZURE_DEPLOY is true, so a push is never red because Azure is not set
+# up. Nothing is published or deployed from any other branch, even when the run is started by hand.
 on:
   push:
-    branches: [develop, main]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +16,7 @@ permissions: {}
 
 jobs:
   image:
-    if: ${{ github.ref_name == 'develop' || github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,7 +41,7 @@ jobs:
           --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
           --label "org.opencontainers.image.revision=${GITHUB_SHA}"
           -t "${IMAGE}:${GITHUB_SHA}"
-          -t "${IMAGE}:${GITHUB_REF_NAME}"
+          -t "${IMAGE}:latest"
       - name: Push the image
         env:
           IMAGE: ${{ steps.name.outputs.image }}
@@ -49,7 +49,7 @@ jobs:
 
   azure:
     needs: image
-    if: ${{ vars.AZURE_DEPLOY == 'true' && (github.ref_name == 'develop' || github.ref_name == 'main') }}
+    if: ${{ vars.AZURE_DEPLOY == 'true' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
