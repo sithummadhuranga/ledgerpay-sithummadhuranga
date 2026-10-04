@@ -49,3 +49,14 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the api image
+        run: docker build --target api --tag ledgerpay-api backend
+      - name: Build the database tool image
+        run: docker build --target dbtool --tag ledgerpay-dbtool backend
+      - name: Build the web image
+        run: docker build --target web --tag ledgerpay-web frontend
