@@ -117,7 +117,17 @@ dotnet run --project backend/src/LedgerPay.Api      # http://localhost:5100, nee
 cd frontend && npm install && npm run dev            # http://localhost:5173, passes /api to port 5100
 ```
 
-A first walk through, because the three customers start with a balance of 0.00:
+### Hosted copy
+
+A copy runs online for the review at https://ledgerpay.sithum.dev, with Swagger at https://ledgerpay.sithum.dev/swagger. The app is on Vercel, the API is a container on an Azure App Service and the database is an Azure SQL free database. The demo logins are in the email that came with this submission and are not kept in the repo.
+
+- The free database pauses itself after about an hour without a request. The first request after a pause can take up to a minute, and the health check can answer 503 once while the database wakes. Wait a moment and try again.
+- Vercel passes `/api`, `/swagger` and `/openapi` on to the API, so the browser sees one address and the `SameSite=Strict` refresh cookie works. The rewrites are in `frontend/vercel.json`.
+- Every push to `main` builds the API image and pushes it to the GitHub container registry. Azure only gets it when a reviewer of the `production` environment approves the deploy workflow, which is started by hand.
+
+### A first walk through
+
+The three customers start with a balance of 0.00, so the first steps are:
 
 1. Sign in as a customer (see the next section) and copy the wallet number from the wallet page.
 2. Sign in as the operator and top up that wallet under Top up. Use any bank reference of 6 to 40 letters and digits.
@@ -300,7 +310,7 @@ The hash is taken from the validated request in a canonical form, so spacing and
 - Fees, limits and the balance cap are changed by editing `SystemSettings`. There is no screen for it.
 - No holds or approvals for large transfers, no reversals, no withdrawals, no CSV statement. The brief marks these as bonus.
 - LKR only.
-- The app is not deployed anywhere. It runs with Docker Compose. CI builds the Docker images, so a host can run them, but there is no hosted copy.
+- The hosted copy is a demo. Everyone behind Vercel reaches the API from the same address, so the per-address rate limits are shared by all visitors. The deploy uses the publish profile of the web app, a secret that has to be replaced if it leaks. The free database pauses when idle, as section 6 says.
 
 ## 15. Time spent
 
