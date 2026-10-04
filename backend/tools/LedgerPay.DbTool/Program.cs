@@ -19,6 +19,10 @@ if (command is not ("setup" or "migrate" or "permissions" or "seed"))
 
 var builder = Host.CreateApplicationBuilder();
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+
+// Environment variables are added again after the user secrets, so a value given for one run wins over the one kept on the
+// developer's machine. Without this a run meant for Azure used the local database.
+builder.Configuration.AddEnvironmentVariables();
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 var connectionString = builder.Configuration.GetConnectionString("Migration");
