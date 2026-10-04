@@ -149,6 +149,11 @@ public sealed class SessionService(
             {
                 var owner = await db.Users.SingleAsync(user => user.Id == presented.UserId, cancellationToken);
                 var response = await LoginResponseBuilder.BuildAsync(db, tokens, owner, now, cancellationToken);
+
+                // Left on record with the address, because this is also what a copy of a token used just in time looks like.
+                db.AuditLogs.Add(AuditEntry.Create(
+                    AuditActions.RefreshGraceUsed, AuditEntityTypes.Session, presented.FamilyId.ToString(), null, owner.Id, info, now));
+                await db.SaveChangesAsync(cancellationToken);
                 return ServiceResult<Refreshed>.Ok(new Refreshed(response, null));
             }
 
@@ -166,8 +171,10 @@ public sealed class SessionService(
         var token = refreshTokens.NewToken();
         var next = NewRow(user.Id, presented.FamilyId, token, presented.SessionStartedAt, now, info);
         presented.RevokedAt = now;
-        presented.ReplacedById = next.Id;
+
+        // The key is made when the row is added, as for every other table, so it is sequential and the index stays tidy.
         db.RefreshTokens.Add(next);
+        presented.ReplacedById = next.Id;
         db.AuditLogs.Add(AuditEntry.Create(
             AuditActions.RefreshRotated, AuditEntityTypes.Session, presented.FamilyId.ToString(), null, user.Id, info, now));
 
@@ -195,7 +202,6 @@ public sealed class SessionService(
 
     private RefreshToken NewRow(Guid userId, Guid familyId, string token, DateTime sessionStartedAt, DateTime now, RequestInfo info) => new()
     {
-        Id = Guid.NewGuid(),
         UserId = userId,
         FamilyId = familyId,
         TokenHash = refreshTokens.Hash(token),

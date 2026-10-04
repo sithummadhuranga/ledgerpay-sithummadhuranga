@@ -124,6 +124,37 @@ public class SessionEndpointsTests(SqlServerFixture sql)
         Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Signing_in_again_in_a_browser_ends_the_session_that_browser_held()
+    {
+        var client = Client();
+        var (email, first) = await SignInAsync(client);
+        var oldCookie = CookieValue(first);
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/login") { Content = JsonContent.Create(new { email, password = ApiCalls.Password }) };
+        request.Headers.Add("Cookie", $"{CookieName}={oldCookie}");
+
+        var second = await Send(client, request);
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        Assert.NotEqual(oldCookie, CookieValue(second));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Send(client, Post("/api/v1/auth/refresh", oldCookie))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Send(client, Post("/api/v1/auth/refresh", CookieValue(second)))).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_sign_in_that_fails_leaves_the_session_the_browser_held_alone()
+    {
+        var client = Client();
+        var (email, first) = await SignInAsync(client);
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/login") { Content = JsonContent.Create(new { email, password = "Wrong-Password-1!" }) };
+        request.Headers.Add("Cookie", $"{CookieName}={CookieValue(first)}");
+
+        var failed = await Send(client, request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Send(client, Post("/api/v1/auth/refresh", CookieValue(first)))).StatusCode);
+    }
+
     // ---- refresh
 
     [Fact]

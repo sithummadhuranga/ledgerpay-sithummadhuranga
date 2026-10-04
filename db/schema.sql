@@ -468,7 +468,7 @@ GO
 BEGIN TRANSACTION;
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20261004134915_AddRefreshTokens'
+    WHERE [MigrationId] = N'20261004141755_AddRefreshTokens'
 )
 BEGIN
     CREATE TABLE [RefreshTokens] (
@@ -490,7 +490,15 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20261004134915_AddRefreshTokens'
+    WHERE [MigrationId] = N'20261004141755_AddRefreshTokens'
+)
+BEGIN
+    CREATE INDEX [IX_RefreshTokens_FamilyId_UserId] ON [RefreshTokens] ([FamilyId], [UserId]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004141755_AddRefreshTokens'
 )
 BEGIN
     CREATE UNIQUE INDEX [IX_RefreshTokens_TokenHash] ON [RefreshTokens] ([TokenHash]);
@@ -498,19 +506,19 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20261004134915_AddRefreshTokens'
+    WHERE [MigrationId] = N'20261004141755_AddRefreshTokens'
 )
 BEGIN
-    CREATE INDEX [IX_RefreshTokens_UserId_FamilyId] ON [RefreshTokens] ([UserId], [FamilyId]);
+    CREATE INDEX [IX_RefreshTokens_UserId] ON [RefreshTokens] ([UserId]);
 END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20261004134915_AddRefreshTokens'
+    WHERE [MigrationId] = N'20261004141755_AddRefreshTokens'
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20261004134915_AddRefreshTokens', N'10.0.12');
+    VALUES (N'20261004141755_AddRefreshTokens', N'10.0.12');
 END;
 
 COMMIT;
