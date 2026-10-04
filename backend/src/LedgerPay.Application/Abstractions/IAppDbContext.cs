@@ -21,6 +21,8 @@ public interface IAppDbContext
     // Cut it with Where after this call: a filter then runs after the view has worked out the running balance.
     IQueryable<StatementRow> WalletStatement(Guid walletId);
 
+    Task<bool> CanConnectAsync(CancellationToken cancellationToken);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
     // Runs the work in one database transaction, inside the retrying execution strategy. It clears the change

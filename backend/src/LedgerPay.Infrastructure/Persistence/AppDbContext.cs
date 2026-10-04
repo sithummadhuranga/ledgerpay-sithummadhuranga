@@ -34,6 +34,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         WHERE s.WalletId = {walletId}
         """);
 
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => Database.CanConnectAsync(cancellationToken);
+
     public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken)
     {
         var strategy = Database.CreateExecutionStrategy();
