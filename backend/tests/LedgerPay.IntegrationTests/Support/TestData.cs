@@ -30,6 +30,27 @@ internal static class TestData
         return (user, wallet, account);
     }
 
+    // An operator or an admin made for one test, with a password the test knows, so a test can restrict it
+    // without touching the seeded accounts that every other test signs in with.
+    public static async Task<User> AddStaffAsync(AppDbContext db, string roleName, string password)
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        var role = await db.Roles.SingleAsync(candidate => candidate.Name == roleName);
+        var user = new User
+        {
+            Email = $"{roleName.ToLowerInvariant()}.{suffix}@example.com",
+            Phone = "+947" + Interlocked.Increment(ref nextPhone),
+            FullName = $"Test {roleName} {suffix}",
+            PasswordHash = new LedgerPay.Infrastructure.Security.PasswordService().Hash(password),
+            CreatedAt = DateTime.UtcNow
+        };
+        user.UserRoles.Add(new UserRole { User = user, Role = role });
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user;
+    }
+
     public static async Task<Transaction> AddTransactionAsync(
         AppDbContext db,
         Guid initiatedByUserId,

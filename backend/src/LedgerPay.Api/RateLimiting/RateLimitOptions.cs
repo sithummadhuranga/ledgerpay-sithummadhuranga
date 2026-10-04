@@ -19,6 +19,10 @@ public sealed class RateLimitOptions
     // Refresh and sign out, counted for each address. Every page load refreshes, so the limit is looser than for sign-in.
     public RateLimitRule Refresh { get; set; } = new() { PermitLimit = 30, WindowSeconds = 60 };
 
+    // The back office lists and searches, counted for each signed-in staff member. A search box sends several calls a minute,
+    // and a staff account that is taken over must not be able to read every customer in seconds.
+    public RateLimitRule BackOffice { get; set; } = new() { PermitLimit = 120, WindowSeconds = 60 };
+
     // Wallet lookup, counted for each customer. A lookup can be used to scan for wallets.
     public RateLimitRule Lookup { get; set; } = new() { PermitLimit = 30, WindowSeconds = 60 };
 
@@ -30,6 +34,7 @@ public sealed class RateLimitOptions
     {
         Check(nameof(Auth), Auth);
         Check(nameof(Refresh), Refresh);
+        Check(nameof(BackOffice), BackOffice);
         Check(nameof(Lookup), Lookup);
         Check(nameof(Money), Money);
     }

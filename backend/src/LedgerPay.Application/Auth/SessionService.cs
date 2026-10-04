@@ -168,6 +168,14 @@ public sealed class SessionService(
     {
         var user = await db.Users.SingleAsync(row => row.Id == presented.UserId, cancellationToken);
 
+        // The restriction already ended every session. This is for one that was started in the same moment.
+        if (user.RestrictedAt is not null)
+        {
+            presented.RevokedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+            return ServiceResult<Refreshed>.Fail(ErrorCodes.InvalidRefreshToken);
+        }
+
         var token = refreshTokens.NewToken();
         var next = NewRow(user.Id, presented.FamilyId, token, presented.SessionStartedAt, now, info);
         presented.RevokedAt = now;

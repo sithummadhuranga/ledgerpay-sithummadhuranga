@@ -27,7 +27,7 @@ public sealed class ApiFactory(string apiConnectionString, JwtOptions jwt, IRead
         builder.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
 
         // The limits are far above anything the suite sends, so a test only meets a limit it asked for.
-        foreach (var area in new[] { "Auth", "Refresh", "Lookup", "Money" })
+        foreach (var area in new[] { "Auth", "Refresh", "BackOffice", "Lookup", "Money" })
         {
             builder.UseSetting($"RateLimits:{area}:PermitLimit", "1000000");
         }

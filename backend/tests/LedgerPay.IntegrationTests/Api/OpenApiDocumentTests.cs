@@ -24,6 +24,12 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
         "get /api/v1/transactions/{reference}",
         "post /api/v1/admin/topups",
         "patch /api/v1/admin/wallets/{walletNumber}/status",
+        "get /api/v1/admin/users",
+        "get /api/v1/admin/users/{walletNumber}",
+        "get /api/v1/admin/transactions",
+        "get /api/v1/admin/audit-logs",
+        "get /api/v1/admin/staff",
+        "patch /api/v1/admin/staff/restriction",
         "get /api/v1/health"
     ];
 
@@ -100,7 +106,12 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
     {
         using var document = await DocumentAsync();
 
-        string[] gated = ["get /api/v1/wallets/me", "post /api/v1/transfers", "post /api/v1/admin/topups", "patch /api/v1/admin/wallets/{walletNumber}/status"];
+        string[] gated =
+        [
+            "get /api/v1/wallets/me", "post /api/v1/transfers", "post /api/v1/admin/topups", "patch /api/v1/admin/wallets/{walletNumber}/status",
+            "get /api/v1/admin/users", "get /api/v1/admin/users/{walletNumber}", "get /api/v1/admin/transactions", "get /api/v1/admin/audit-logs",
+            "get /api/v1/admin/staff", "patch /api/v1/admin/staff/restriction"
+        ];
         Assert.True(Operation(document, "get /api/v1/transactions/{reference}").GetProperty("responses").TryGetProperty("401", out _));
         foreach (var key in gated)
         {
@@ -121,7 +132,9 @@ public class OpenApiDocumentTests(SqlServerFixture sql)
         [
             "post /api/v1/auth/register", "post /api/v1/auth/login", "post /api/v1/auth/refresh", "post /api/v1/auth/logout",
             "get /api/v1/auth/sessions", "delete /api/v1/auth/sessions/{id}", "get /api/v1/wallets/lookup",
-            "get /api/v1/transfers/quote", "post /api/v1/transfers", "post /api/v1/admin/topups"
+            "get /api/v1/transfers/quote", "post /api/v1/transfers", "post /api/v1/admin/topups",
+            "get /api/v1/admin/users", "get /api/v1/admin/users/{walletNumber}", "get /api/v1/admin/transactions", "get /api/v1/admin/audit-logs",
+            "get /api/v1/admin/staff", "patch /api/v1/admin/staff/restriction"
         ];
         foreach (var key in Operations)
         {

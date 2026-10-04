@@ -524,3 +524,72 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [RestrictedAt] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [RestrictedByUserId] uniqueidentifier NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [RestrictedReason] nvarchar(250) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    CREATE INDEX [IX_Users_RestrictedByUserId] ON [Users] ([RestrictedByUserId]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    CREATE INDEX [IX_Transactions_CreatedAt] ON [Transactions] ([CreatedAt] DESC);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    CREATE INDEX [IX_AuditLogs_Action_CreatedAt] ON [AuditLogs] ([Action], [CreatedAt] DESC);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    ALTER TABLE [Users] ADD CONSTRAINT [FK_Users_Users_RestrictedByUserId] FOREIGN KEY ([RestrictedByUserId]) REFERENCES [Users] ([Id]) ON DELETE NO ACTION;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261004150929_AddBackOffice'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261004150929_AddBackOffice', N'10.0.12');
+END;
+
+COMMIT;
+GO
+
