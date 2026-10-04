@@ -7,6 +7,7 @@ using LedgerPay.Infrastructure;
 using LedgerPay.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddApiLogging();
 
 var connectionString = builder.Configuration.GetConnectionString("Api");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -35,6 +36,7 @@ var app = builder.Build();
 app.UseForwardedHeadersIfEnabled();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseApiRequestLogging();
 app.UseExceptionHandler(_ => { });
 app.UseStatusCodePages(context =>
 {
@@ -42,6 +44,7 @@ app.UseStatusCodePages(context =>
     return code is null ? Task.CompletedTask : Problems.WriteAsync(context.HttpContext, code);
 });
 app.UseRouting();
+app.UseRoutePatternForLogs();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

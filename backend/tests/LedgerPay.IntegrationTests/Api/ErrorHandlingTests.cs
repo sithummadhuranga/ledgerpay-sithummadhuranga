@@ -66,7 +66,7 @@ public class ErrorHandlingTests(SqlServerFixture sql)
         // Their text holds the values of the failed statement, such as the email that broke a unique index.
         var configuration = sql.Api.Services.GetRequiredService<IConfiguration>();
 
-        Assert.Equal("None", configuration[$"Logging:LogLevel:{category}"]);
+        Assert.Equal("Fatal", configuration[$"Serilog:MinimumLevel:Override:{category}"]);
     }
 
     [Fact]
