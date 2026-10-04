@@ -1,0 +1,62 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore
+      - run: dotnet build --no-restore --configuration Release
+      - run: dotnet test --no-build --configuration Release
+      - name: Check db/schema.sql matches the migrations
+        run: |
+          dotnet tool restore
+          dotnet ef migrations script --idempotent --project src/LedgerPay.Infrastructure --output /tmp/generated.sql
+          sed '1s/^\xEF\xBB\xBF//' /tmp/generated.sql > /tmp/expected.sql
+          sed '1,/^-- GENERATED SCRIPT STARTS BELOW/d' ../db/schema.sql > /tmp/committed.sql
+          diff /tmp/expected.sql /tmp/committed.sql
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the api image
+        run: docker build --target api --tag ledgerpay-api backend
+      - name: Build the database tool image
+        run: docker build --target dbtool --tag ledgerpay-dbtool backend
+      - name: Build the web image
+        run: docker build --target web --tag ledgerpay-web frontend

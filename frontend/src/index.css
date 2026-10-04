@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+  The theme, in one place. A bank statement more than a landing page: warm paper, ink-green panels, one green accent,
+  a serif for headings, IBM Plex for the interface and tabular mono figures for money. Corners are small, tables are
+  ruled, nothing floats on a shadow, and there are no gradients. Red is only for errors and money going out.
+  Text on the paper is at least 4.5:1, which is WCAG AA.
+*/
+
+/* Dark mode is out of scope. The dark: classes in the components only apply under a .dark element, and nothing adds one. */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-heading: "Source Serif 4", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-border: var(--panel-border);
+
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
+  --radius-3xl: 8px;
+  --radius-4xl: 8px;
+}
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.968 0.012 88);
+  --foreground: oklch(0.21 0.025 165);
+  --card: oklch(0.992 0.005 88);
+  --card-foreground: oklch(0.21 0.025 165);
+  --popover: oklch(0.992 0.005 88);
+  --popover-foreground: oklch(0.21 0.025 165);
+  --primary: oklch(0.37 0.07 165);
+  --primary-foreground: oklch(0.98 0.01 88);
+  --secondary: oklch(0.935 0.014 88);
+  --secondary-foreground: oklch(0.25 0.03 165);
+  --muted: oklch(0.945 0.012 88);
+  --muted-foreground: oklch(0.46 0.02 160);
+  --accent: oklch(0.925 0.03 160);
+  --accent-foreground: oklch(0.28 0.06 165);
+  --destructive: oklch(0.5 0.16 28);
+  --border: oklch(0.88 0.014 88);
+  --input: oklch(0.78 0.018 88);
+  --ring: oklch(0.37 0.07 165);
+  --radius: 6px;
+
+  /* The dark green panel used for the balance, the sign-in side and the closing call to action. */
+  --panel: oklch(0.25 0.045 165);
+  --panel-foreground: oklch(0.96 0.012 88);
+  --panel-muted: oklch(0.8 0.025 150);
+  --panel-border: oklch(0.38 0.04 165);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading tracking-tight;
+  }
+
+  /* Money, references and wallet numbers line up when every digit has the same width. */
+  .num {
+    @apply font-mono;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A skip link for the keyboard: the first thing a Tab reaches. */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:ring-2 focus:ring-ring;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Faint ledger rules behind a dark panel, drawn with an SVG so the page has no gradient in it. */
+.ledger-rules {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M0 39.5h40' stroke='%23ffffff' stroke-opacity='0.06'/%3E%3C/svg%3E");
+}

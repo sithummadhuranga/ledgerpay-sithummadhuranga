@@ -1,0 +1,38 @@
+namespace LedgerPay.Domain.Constants;
+
+public static class ErrorCodes
+{
+    public const string ValidationFailed = "VALIDATION_FAILED";
+    public const string IdempotencyKeyRequired = "IDEMPOTENCY_KEY_REQUIRED";
+    public const string Unauthenticated = "UNAUTHENTICATED";
+    public const string InvalidCredentials = "INVALID_CREDENTIALS";
+    public const string Forbidden = "FORBIDDEN";
+    public const string AccountLocked = "ACCOUNT_LOCKED";
+    public const string InvalidRefreshToken = "INVALID_REFRESH_TOKEN";
+    public const string AccountRestricted = "ACCOUNT_RESTRICTED";
+    public const string StaffNotFound = "STAFF_NOT_FOUND";
+    public const string StaffNotRestrictable = "STAFF_NOT_RESTRICTABLE";
+    public const string AccountAlreadyInState = "ACCOUNT_ALREADY_IN_STATE";
+    public const string SessionNotFound = "SESSION_NOT_FOUND";
+    public const string WalletNotFound = "WALLET_NOT_FOUND";
+    public const string TransactionNotFound = "TRANSACTION_NOT_FOUND";
+    public const string RecipientNotFound = "RECIPIENT_NOT_FOUND";
+    public const string EmailAlreadyRegistered = "EMAIL_ALREADY_REGISTERED";
+    public const string PhoneAlreadyRegistered = "PHONE_ALREADY_REGISTERED";
+    public const string DuplicateBankReference = "DUPLICATE_BANK_REFERENCE";
+    public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
+    public const string WalletAlreadyInState = "WALLET_ALREADY_IN_STATE";
+    public const string SelfTransferNotAllowed = "SELF_TRANSFER_NOT_ALLOWED";
+    public const string AmountBelowMinimum = "AMOUNT_BELOW_MINIMUM";
+    public const string AmountAboveMaximum = "AMOUNT_ABOVE_MAXIMUM";
+    public const string WalletFrozen = "WALLET_FROZEN";
+    public const string InsufficientFunds = "INSUFFICIENT_FUNDS";
+    public const string ReceiverBalanceLimitExceeded = "RECEIVER_BALANCE_LIMIT_EXCEEDED";
+    public const string BalanceLimitExceeded = "BALANCE_LIMIT_EXCEEDED";
+    public const string RateLimited = "RATE_LIMITED";
+    public const string NotFound = "NOT_FOUND";
+    public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
+    public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
+    public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
+    public const string InternalError = "INTERNAL_ERROR";
+}

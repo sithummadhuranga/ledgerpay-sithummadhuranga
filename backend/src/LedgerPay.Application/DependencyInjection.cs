@@ -1,0 +1,47 @@
+using FluentValidation;
+using LedgerPay.Application.Admin;
+using LedgerPay.Application.Auth;
+using LedgerPay.Application.BackOffice;
+using LedgerPay.Application.Idempotency;
+using LedgerPay.Application.Settings;
+using LedgerPay.Application.TopUps;
+using LedgerPay.Application.Transactions;
+using LedgerPay.Application.Transfers;
+using LedgerPay.Application.Wallets;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LedgerPay.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.AddScoped<LedgerSettingsProvider>();
+        services.AddScoped<IdempotencyService>();
+
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<ITransferService, TransferService>();
+        services.AddScoped<ITopUpService, TopUpService>();
+        services.AddScoped<IWalletStatusService, WalletStatusService>();
+        services.AddScoped<IStaffService, StaffService>();
+        services.AddScoped<IBackOfficeQueries, BackOfficeQueries>();
+        services.AddScoped<IWalletService, WalletService>();
+        services.AddScoped<ITransactionQueries, TransactionQueries>();
+
+        services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
+        services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
+        services.AddSingleton<IValidator<QuoteRequest>, QuoteRequestValidator>();
+        services.AddSingleton<IValidator<TransferRequest>, TransferRequestValidator>();
+        services.AddSingleton<IValidator<TopUpRequest>, TopUpRequestValidator>();
+        services.AddSingleton<IValidator<WalletStatusRequest>, WalletStatusRequestValidator>();
+        services.AddSingleton<IValidator<StaffRestrictionRequest>, StaffRestrictionRequestValidator>();
+        services.AddSingleton<IValidator<UserSearchQuery>, UserSearchQueryValidator>();
+        services.AddSingleton<IValidator<StaffTransactionQuery>, StaffTransactionQueryValidator>();
+        services.AddSingleton<IValidator<AuditQuery>, AuditQueryValidator>();
+        services.AddSingleton<IValidator<LookupQuery>, LookupQueryValidator>();
+        services.AddSingleton<IValidator<HistoryQuery>, HistoryQueryValidator>();
+
+        return services;
+    }
+}
