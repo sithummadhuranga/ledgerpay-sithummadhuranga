@@ -2,9 +2,7 @@
 .idea/
 .vscode/
 
-# Local only: working notes and agent config, never part of the submission
-.claude/
-CLAUDE.md
+# Local only: working notes, never part of the submission
 docs/internal/
 
 # Secrets. .env.example is the committed template
