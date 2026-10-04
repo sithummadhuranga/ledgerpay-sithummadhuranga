@@ -78,10 +78,9 @@ public class HealthCheckTimeoutTests
     }
 
     [Fact]
-    public async Task The_default_wait_is_a_few_seconds_so_a_probe_does_not_time_out_first()
+    public void The_default_wait_is_a_few_seconds_so_a_probe_does_not_time_out_first()
     {
         Assert.InRange(DatabaseHealthCheck.DefaultTimeout, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5));
-        await Task.CompletedTask;
     }
 
     [Fact]
