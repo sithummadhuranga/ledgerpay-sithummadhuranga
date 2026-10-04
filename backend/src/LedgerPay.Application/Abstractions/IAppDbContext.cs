@@ -1,3 +1,4 @@
+using LedgerPay.Application.Transactions;
 using LedgerPay.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,13 @@ public interface IAppDbContext
     DbSet<IdempotencyKey> IdempotencyKeys { get; }
     DbSet<SystemSetting> SystemSettings { get; }
     DbSet<AuditLog> AuditLogs { get; }
+
+    // The history of one wallet: its lines from the wallet statement view joined to their transactions and counterparties,
+    // plus the transfers its holder sent and had refused. In no particular order.
+    // Cut it with Where after this call: a filter then runs after the view has worked out the running balance.
+    IQueryable<StatementRow> WalletStatement(Guid walletId);
+
+    Task<bool> CanConnectAsync(CancellationToken cancellationToken);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

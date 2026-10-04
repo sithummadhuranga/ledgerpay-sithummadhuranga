@@ -1,0 +1,1445 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "LedgerPay API",
+    "description": "A small LKR digital wallet with a double-entry ledger. Sign in at /api/v1/auth/login, then send the token as a Bearer token. Errors use RFC 7807 Problem Details with a stable code.",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/admin/topups": {
+      "post": {
+        "tags": [
+          "AdminTopUps"
+        ],
+        "summary": "Credit a customer wallet after a bank deposit. The bank reference can be used once. Operators only. Needs an Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A new value for each money move, up to 100 characters from A-Z, a-z, 0-9, _ and -. Sending the same key and body again gives the first answer. The same key with another body gives 409.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopUpResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/wallets/{walletNumber}/status": {
+      "patch": {
+        "tags": [
+          "AdminWallets"
+        ],
+        "summary": "Freeze or unfreeze a wallet, with a reason. Operators and admins only.",
+        "parameters": [
+          {
+            "name": "walletNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create a customer account with an empty wallet. Anyone may call it.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Sign in and get an access token that lasts 15 minutes. Anyone may call it.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Locked",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{reference}": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Show one transaction. Its sender and receiver see it, and so do operators and admins. Anyone else gets 404, the same as for a reference that does not exist.",
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/transfers/quote": {
+      "get": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "Show the fee and the total for an amount, before sending. Customers only.",
+        "parameters": [
+          {
+            "name": "Amount",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/transfers": {
+      "post": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "Send money to another active wallet, by wallet number or mobile number. The fee is charged to the sender. Needs an Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A new value for each money move, up to 100 characters from A-Z, a-z, 0-9, _ and -. Sending the same key and body again gives the first answer. The same key with another body gives 409.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/wallets/me": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Show my wallet number, balance and status. Customers only.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/wallets/lookup": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Find a wallet by wallet number or mobile number before sending. Shows the number, a masked name and whether it is active. Customers only.",
+        "parameters": [
+          {
+            "name": "WalletNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Phone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          },
+          "429": {
+            "description": "Too many requests. Wait for the number of seconds in the Retry-After header. Code RATE_LIMITED."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/wallets/me/transactions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "My transaction history, newest first, with page, pageSize, from and to (whole days in UTC, both included). Customers only.",
+        "parameters": [
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "To",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfHistoryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or the token is expired or not valid. Code UNAUTHENTICATED."
+          },
+          "403": {
+            "description": "The signed-in user\u0027s role is not allowed here. Code FORBIDDEN."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Answers Healthy when the API can reach its database and Unhealthy when it cannot. No token needed.",
+        "responses": {
+          "200": {
+            "description": "Healthy"
+          },
+          "503": {
+            "description": "Unhealthy"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HistoryItem": {
+        "required": [
+          "reference",
+          "type",
+          "direction",
+          "amount",
+          "fee",
+          "counterpartyName",
+          "note",
+          "status",
+          "createdAt",
+          "balanceAfter",
+          "failureCode"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/TransactionDirection"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "counterpartyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "balanceAfter": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LoginRequest": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginResponse": {
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresAt",
+          "fullName",
+          "roles",
+          "walletNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "walletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LookupResponse": {
+        "required": [
+          "walletNumber",
+          "holderName",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResponseOfHistoryItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "QuoteResponse": {
+        "required": [
+          "amount",
+          "fee",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "required": [
+          "fullName",
+          "email",
+          "phone",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterResponse": {
+        "required": [
+          "fullName",
+          "email",
+          "phone",
+          "walletNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "walletNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "TopUpRequest": {
+        "required": [
+          "walletNumber",
+          "amount",
+          "bankReference",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "bankReference": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TopUpResponse": {
+        "required": [
+          "reference",
+          "walletNumber",
+          "amount",
+          "balanceAfter",
+          "bankReference",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "walletNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "balanceAfter": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "bankReference": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TransactionDirection": {
+        "enum": [
+          "Sent",
+          "Received",
+          null
+        ]
+      },
+      "TransactionResponse": {
+        "required": [
+          "reference",
+          "type",
+          "status",
+          "direction",
+          "amount",
+          "fee",
+          "counterpartyName",
+          "note",
+          "failureCode",
+          "createdAt",
+          "senderWalletNumber",
+          "receiverWalletNumber",
+          "bankReference"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TransactionDirection"
+              }
+            ]
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "counterpartyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderWalletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "receiverWalletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TransactionStatus": {
+        "enum": [
+          "Completed",
+          "Failed"
+        ]
+      },
+      "TransactionType": {
+        "enum": [
+          "TopUp",
+          "Transfer"
+        ]
+      },
+      "TransferRequest": {
+        "required": [
+          "recipientWalletNumber",
+          "recipientPhone",
+          "amount",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "recipientWalletNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recipientPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TransferResponse": {
+        "required": [
+          "reference",
+          "amount",
+          "fee",
+          "total",
+          "balanceAfter",
+          "recipientWalletNumber",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "balanceAfter": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "recipientWalletNumber": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WalletResponse": {
+        "required": [
+          "walletNumber",
+          "holderName",
+          "balance",
+          "availableBalance",
+          "currency",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "balance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "availableBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WalletStatus"
+          }
+        }
+      },
+      "WalletStatus": {
+        "enum": [
+          "Active",
+          "Frozen"
+        ]
+      },
+      "WalletStatusRequest": {
+        "required": [
+          "status",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WalletStatus"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletStatusResponse": {
+        "required": [
+          "walletNumber",
+          "status",
+          "reason",
+          "changedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "walletNumber": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WalletStatus"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "The access token from /api/v1/auth/login. It lasts 15 minutes.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "AdminTopUps"
+    },
+    {
+      "name": "AdminWallets"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Transactions"
+    },
+    {
+      "name": "Transfers"
+    },
+    {
+      "name": "Wallets"
+    }
+  ]
+}

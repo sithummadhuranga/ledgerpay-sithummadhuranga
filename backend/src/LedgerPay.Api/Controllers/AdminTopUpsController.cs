@@ -1,16 +1,19 @@
 using LedgerPay.Api.Authorization;
 using LedgerPay.Api.Errors;
 using LedgerPay.Api.Extensions;
+using LedgerPay.Api.RateLimiting;
 using LedgerPay.Application.TopUps;
 using LedgerPay.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LedgerPay.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/topups")]
 [Authorize(Policy = Policies.TopUp)]
+[EnableRateLimiting(RateLimitPolicies.Money)]
 public sealed class AdminTopUpsController(ITopUpService topUps) : ControllerBase
 {
     [HttpPost]

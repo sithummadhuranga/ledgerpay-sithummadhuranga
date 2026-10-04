@@ -1,14 +1,17 @@
 using LedgerPay.Api.Errors;
 using LedgerPay.Api.Extensions;
+using LedgerPay.Api.RateLimiting;
 using LedgerPay.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LedgerPay.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
 [AllowAnonymous]
+[EnableRateLimiting(RateLimitPolicies.Auth)]
 public sealed class AuthController(IAuthService auth) : ControllerBase
 {
     [HttpPost("register")]

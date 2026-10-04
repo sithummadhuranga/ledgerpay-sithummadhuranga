@@ -1,30 +1,24 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace LedgerPay.IntegrationTests.Support;
 
-// Keeps every log line the app writes, with the text of any exception, so a test can look for data that must not be there.
-public sealed class LogCollector : ILoggerProvider
+// Keeps every log event the app writes: the rendered message, all its properties and the text of any exception,
+// so a test can look for data that must not be there.
+public sealed class LogCollector : ILogEventSink
 {
-    private readonly ConcurrentQueue<string> lines = new();
+    private readonly ConcurrentQueue<LogEvent> events = new();
 
-    public IReadOnlyCollection<string> Lines => lines.ToArray();
+    public IReadOnlyCollection<LogEvent> Events => events.ToArray();
 
-    public ILogger CreateLogger(string categoryName) => new CollectingLogger(categoryName, lines);
+    public IReadOnlyCollection<string> Lines => events.Select(Describe).ToArray();
 
-    public void Dispose()
+    public void Emit(LogEvent logEvent) => events.Enqueue(logEvent);
+
+    private static string Describe(LogEvent logEvent)
     {
-    }
-
-    private sealed class CollectingLogger(string category, ConcurrentQueue<string> lines) : ILogger
-    {
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-        public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            lines.Enqueue($"[{logLevel}] {category}: {formatter(state, exception)} {exception}");
-        }
+        var properties = string.Join(" ", logEvent.Properties.Select(property => $"{property.Key}={property.Value}"));
+        return $"[{logEvent.Level}] {logEvent.RenderMessage()} {properties} {logEvent.Exception}";
     }
 }

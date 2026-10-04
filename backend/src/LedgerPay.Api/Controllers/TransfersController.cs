@@ -1,16 +1,19 @@
 using LedgerPay.Api.Authorization;
 using LedgerPay.Api.Errors;
 using LedgerPay.Api.Extensions;
+using LedgerPay.Api.RateLimiting;
 using LedgerPay.Application.Transfers;
 using LedgerPay.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LedgerPay.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/transfers")]
 [Authorize(Policy = Policies.CustomerActions)]
+[EnableRateLimiting(RateLimitPolicies.Money)]
 public sealed class TransfersController(ITransferService transfers) : ControllerBase
 {
     [HttpGet("quote")]
