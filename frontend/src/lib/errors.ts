@@ -1,0 +1,61 @@
+import { ApiError, NETWORK_ERROR, UNKNOWN_ERROR } from './api/problem'
+import { formatMoney } from './format'
+
+// What the user reads for each code the API can send, in one place. A screen never writes its own error sentence.
+// Amounts come from the screen that has them, so a message can name the real numbers.
+export interface ErrorContext {
+  amount?: string
+  fee?: string
+}
+
+type Describe = (error: ApiError, context: ErrorContext) => string
+
+const minutes = (seconds: number | undefined) => Math.max(1, Math.ceil((seconds ?? 900) / 60))
+
+const messages: Record<string, Describe> = {
+  VALIDATION_FAILED: () => 'Some details need fixing. Check the fields marked below.',
+  IDEMPOTENCY_KEY_REQUIRED: () => 'We could not send this request. Try again.',
+  UNAUTHENTICATED: () => 'Your session ended. Sign in again.',
+  INVALID_CREDENTIALS: () => 'The email or password is wrong.',
+  FORBIDDEN: () => 'You do not have access to this.',
+  ACCOUNT_LOCKED: (error) =>
+    `This account is locked after too many failed sign-ins. Try again in ${minutes(error.retryAfterSeconds)} minutes.`,
+  WALLET_NOT_FOUND: () => 'We could not find that wallet.',
+  TRANSACTION_NOT_FOUND: () => 'We could not find that transaction.',
+  RECIPIENT_NOT_FOUND: () => 'We could not find a wallet for that recipient. Check the number and try again.',
+  EMAIL_ALREADY_REGISTERED: () => 'That email is already registered.',
+  PHONE_ALREADY_REGISTERED: () => 'That mobile number is already registered.',
+  DUPLICATE_BANK_REFERENCE: () => 'That bank reference was already used for a top-up.',
+  IDEMPOTENCY_KEY_REUSED: () => 'This request was already sent with different details. Start again.',
+  WALLET_ALREADY_IN_STATE: () => 'The wallet is already in that state.',
+  SELF_TRANSFER_NOT_ALLOWED: () => 'You cannot send money to your own wallet.',
+  AMOUNT_BELOW_MINIMUM: () => 'The amount is below the smallest transfer allowed.',
+  AMOUNT_ABOVE_MAXIMUM: () => 'The amount is above the largest transfer allowed.',
+  WALLET_FROZEN: () => 'A frozen wallet cannot send or receive money.',
+  INSUFFICIENT_FUNDS: (_, { amount, fee }) =>
+    amount && fee
+      ? `Your balance does not cover ${formatMoney(amount)} plus the ${formatMoney(fee)} fee.`
+      : 'Your balance does not cover the amount plus the fee.',
+  RECEIVER_BALANCE_LIMIT_EXCEEDED: () => 'The recipient’s wallet cannot hold that much.',
+  BALANCE_LIMIT_EXCEEDED: () => 'That would take the wallet over its balance limit.',
+  RATE_LIMITED: (error) =>
+    `Too many requests. Try again in ${error.retryAfterSeconds ?? 60} seconds.`,
+  INTERNAL_ERROR: (error) =>
+    `Something went wrong on our side. Try again.${error.traceId ? ` Quote ${error.traceId} if it keeps happening.` : ''}`,
+  NOT_FOUND: () => 'We could not find that.',
+  METHOD_NOT_ALLOWED: () => 'We could not complete that request.',
+  PAYLOAD_TOO_LARGE: () => 'That request is too large.',
+  UNSUPPORTED_MEDIA_TYPE: () => 'We could not complete that request.',
+  [NETWORK_ERROR]: () => 'We could not reach the server. Check your connection and try again.',
+  [UNKNOWN_ERROR]: () => 'Something went wrong. Try again.',
+}
+
+export function describeError(error: unknown, context: ErrorContext = {}): string {
+  if (!(error instanceof ApiError)) {
+    return messages[UNKNOWN_ERROR]!(new ApiError(0, UNKNOWN_ERROR), context)
+  }
+  const describe = messages[error.code] ?? messages[UNKNOWN_ERROR]!
+  return describe(error, context)
+}
+
+export const knownErrorCodes = Object.keys(messages)
