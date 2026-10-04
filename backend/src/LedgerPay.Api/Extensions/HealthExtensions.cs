@@ -25,5 +25,6 @@ public static class HealthExtensions
                 context.Response.ContentType = "application/json";
                 return context.Response.WriteAsJsonAsync(new { status = report.Status == HealthStatus.Healthy ? "Healthy" : "Unhealthy" });
             }
-        }).WithMetadata(new HttpMethodMetadata(["GET", "HEAD"])).AllowAnonymous();
+        }).WithMetadata(new HttpMethodMetadata(["GET"]))
+          .AllowAnonymous();
 }

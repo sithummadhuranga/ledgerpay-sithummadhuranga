@@ -24,7 +24,8 @@ builder.Services
     .AddJwtAuthentication(jwt)
     .AddFrontendCors(builder.Configuration)
     .AddApiControllers()
-    .AddApiHealthChecks();
+    .AddApiHealthChecks()
+    .AddApiDocs();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
@@ -41,6 +42,7 @@ app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseApiDocs();
 app.MapControllers();
 app.MapApiHealth();
 

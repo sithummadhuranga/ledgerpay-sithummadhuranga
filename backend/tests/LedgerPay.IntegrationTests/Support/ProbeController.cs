@@ -9,6 +9,8 @@ namespace LedgerPay.IntegrationTests.Support;
 
 // Endpoints that exist only in the tests, to try the token checks, the role check and the error handler
 // before the real endpoints that use them are built.
+// Left out of the API description, so the exported document holds only the real routes.
+[ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 [Route("api/v1/probe")]
 public sealed class ProbeController : ControllerBase
